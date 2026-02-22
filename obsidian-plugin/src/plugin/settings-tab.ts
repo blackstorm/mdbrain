@@ -21,6 +21,7 @@ export class MdbrainSettingTab extends PluginSettingTab {
       .addText((text) =>
         text
           .setPlaceholder("https://console.example.com")
+          .setValue(this.plugin.settings.serverUrl ?? "")
           .onChange(async (value) => {
             this.plugin.settings.serverUrl = value;
             await this.plugin.saveSettings();
