@@ -192,3 +192,32 @@
                      (mock/header "Origin" "http://example.com"))
           response (wrapped-handler request)]
       (is (= "*" (get-in response [:headers "Access-Control-Allow-Origin"]))))))
+
+;; X-Robots-Tag Middleware 测试
+(deftest test-wrap-noindex
+  (testing "Adds X-Robots-Tag header when headers exist"
+    (let [handler (middleware/wrap-noindex (fn [_]
+                                             {:status 200
+                                              :headers {"Content-Type" "text/plain"}
+                                              :body "ok"}))
+          response (handler (mock/request :get "/console"))]
+      (is (= "noindex, nofollow" (get-in response [:headers "X-Robots-Tag"])))
+      (is (= "text/plain" (get-in response [:headers "Content-Type"])))))
+
+  (testing "Adds X-Robots-Tag header when headers missing"
+    (let [handler (middleware/wrap-noindex (fn [_] {:status 200 :body "ok"}))
+          response (handler (mock/request :get "/console"))]
+      (is (= "noindex, nofollow" (get-in response [:headers "X-Robots-Tag"])))))
+
+  (testing "Overrides existing X-Robots-Tag header"
+    (let [handler (middleware/wrap-noindex (fn [_]
+                                             {:status 200
+                                              :headers {"X-Robots-Tag" "index"}
+                                              :body "ok"}))
+          response (handler (mock/request :get "/console"))]
+      (is (= "noindex, nofollow" (get-in response [:headers "X-Robots-Tag"])))))
+
+  (testing "Non-map responses pass through unchanged"
+    (let [handler (middleware/wrap-noindex (fn [_] "stream-body"))
+          response (handler (mock/request :get "/console"))]
+      (is (= "stream-body" response)))))

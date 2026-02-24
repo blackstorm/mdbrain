@@ -76,6 +76,26 @@
       (is (str/includes? html "Some text"))
       (is (str/includes? html "More text")))))
 
+;;; 测试 1.6: GFM 扩展（tables / task list / strikethrough）
+(deftest test-gfm-extensions
+  (testing "GFM table 渲染为 HTML table"
+    (let [content "| A | B |\n| --- | --- |\n| 1 | 2 |"
+          html (md/md->html content)]
+      (is (str/includes? html "<table>"))
+      (is (str/includes? html "<th>"))
+      (is (str/includes? html "<td>"))))
+
+  (testing "GFM task list 渲染为 checkbox"
+    (let [content "- [x] Done\n- [ ] Todo"
+          html (md/md->html content)]
+      (is (str/includes? html "type=\"checkbox\""))
+      (is (str/includes? html "checked"))
+      (is (str/includes? html "disabled"))))
+
+  (testing "GFM strikethrough 渲染为 <del>"
+    (let [html (md/md->html "~~gone~~")]
+      (is (str/includes? html "<del>gone</del>")))))
+
 ;;; 测试 2: 解析单个 Obsidian 链接
 (deftest test-parse-obsidian-link
   (testing "解析简单链接 [[filename]]"

@@ -32,6 +32,20 @@ export default class MdbrainPlugin extends Plugin {
     this.referenceIndexReady = false;
   }
 
+  private isSyncConfigured(): boolean {
+    const serverUrl = this.settings.serverUrl?.trim();
+    const publishKey = this.settings.publishKey?.trim();
+    return Boolean(serverUrl) && Boolean(publishKey);
+  }
+
+  private ensureSyncConfigured(notify = false): boolean {
+    if (this.isSyncConfigured()) return true;
+    if (notify) {
+      new Notice("Publish is not configured. Set Publish URL and Key in Mdbrain settings.");
+    }
+    return false;
+  }
+
   async onload() {
     console.log("[Mdbrain] Plugin loading (snapshot publish)...");
     await this.loadSettings();
@@ -163,6 +177,9 @@ export default class MdbrainPlugin extends Plugin {
   }
 
   private async syncCurrentFile(file: TFile): Promise<void> {
+    if (!this.ensureSyncConfigured(true)) {
+      return;
+    }
     const result = await this.syncNoteFile(file);
     if (!result.success) {
       new Notice("Publish failed: note upload failed");
@@ -176,6 +193,8 @@ export default class MdbrainPlugin extends Plugin {
     if (!this.settings.autoSync) return;
 
     this.referenceIndex.updateNote(file.path, this.extractLinkpaths(data, cache));
+
+    if (!this.isSyncConfigured()) return;
 
     this.debounceService.debounce(
       file.path,
@@ -201,6 +220,7 @@ export default class MdbrainPlugin extends Plugin {
   async handleFileDelete(_file: TFile) {
     if (!this.settings.autoSync) return;
     this.referenceIndex.removeNote(_file.path);
+    if (!this.isSyncConfigured()) return;
     await this.fullSync();
   }
 
@@ -210,6 +230,8 @@ export default class MdbrainPlugin extends Plugin {
     const cache = this.app.metadataCache.getFileCache(file) as unknown as CachedMetadataLike | null;
     const content = cache ? "" : await this.app.vault.read(file);
     this.referenceIndex.updateNote(file.path, this.extractLinkpaths(content, cache));
+
+    if (!this.isSyncConfigured()) return;
 
     const result = await this.syncNoteFile(file);
     if (!result.success) {
@@ -222,6 +244,7 @@ export default class MdbrainPlugin extends Plugin {
 
   async handleAssetChange(file: TFile) {
     if (!this.settings.autoSync) return;
+    if (!this.isSyncConfigured()) return;
     if (this.referenceIndexReady && !this.referenceIndex.isAssetReferenced(file.path)) {
       return;
     }
@@ -246,6 +269,15 @@ export default class MdbrainPlugin extends Plugin {
     needUploadNotes: Array<{ id: string; hash: string }>;
     linkedNotesById: Map<string, TFile>;
   }> {
+    if (!this.isSyncConfigured()) {
+      return {
+        success: false,
+        needUploadAssets: [],
+        assetsById: new Map(),
+        needUploadNotes: [],
+        linkedNotesById: new Map(),
+      };
+    }
     const clientId = await getClientId(file, this.app);
     if (!clientId) {
       return {
@@ -293,6 +325,9 @@ export default class MdbrainPlugin extends Plugin {
   }
 
   private async syncAssetFile(file: TFile): Promise<boolean> {
+    if (!this.isSyncConfigured()) {
+      return false;
+    }
     const buffer = await this.app.vault.readBinary(file);
     const assetId = await hashString(file.path);
     const hash = await md5Hash(buffer);
@@ -310,6 +345,9 @@ export default class MdbrainPlugin extends Plugin {
   }
 
   async fullSync(): Promise<void> {
+    if (!this.ensureSyncConfigured(true)) {
+      return;
+    }
     const notes = await this.buildNoteSnapshot();
     const referencedAssets = await this.collectReferencedAssetFiles();
     const assets = await this.buildAssetSnapshot(referencedAssets);

@@ -8,22 +8,34 @@
   (:import [org.commonmark.parser Parser]
            [org.commonmark.renderer.html HtmlRenderer]
            [org.commonmark.renderer.text TextContentRenderer]
-           [org.commonmark.node Heading Text]
-           [org.commonmark.ext.front.matter YamlFrontMatterExtension]))
+           [org.commonmark.node Heading]
+           [org.commonmark.ext.front.matter YamlFrontMatterExtension]
+           [org.commonmark.ext.gfm.tables TablesExtension]
+           [org.commonmark.ext.task.list.items TaskListItemsExtension]
+           [org.commonmark.ext.gfm.strikethrough StrikethroughExtension]))
 
 ;;; ============================================================
 ;;; 1. CommonMark 解析器初始化
 ;;; ============================================================
 
-(def ^:private extensions
-  "CommonMark 扩展列表（含 YAML front matter 支持）"
-  [(YamlFrontMatterExtension/create)])
+(def ^:private parser-extensions
+  "CommonMark 解析扩展列表（含 YAML front matter 与 GFM 支持）"
+  [(YamlFrontMatterExtension/create)
+   (TablesExtension/create)
+   (TaskListItemsExtension/create)
+   (StrikethroughExtension/create)])
+
+(def ^:private renderer-extensions
+  "HTML 渲染扩展列表（排除 YAML front matter）"
+  [(TablesExtension/create)
+   (TaskListItemsExtension/create)
+   (StrikethroughExtension/create)])
 
 (def ^:private parser
   "线程安全的 Markdown 解析器（单例）
    配置 YAML front matter 扩展用于识别和跳过 front matter"
   (-> (Parser/builder)
-      (.extensions extensions)
+      (.extensions parser-extensions)
       (.build)))
 
 (def ^:private renderer
@@ -31,6 +43,7 @@
    注意：不添加 YAML 扩展，这样 YamlFrontMatterBlock 节点将被忽略
    配置 softbreak 为 <br> 以保留单行换行"
   (-> (HtmlRenderer/builder)
+      (.extensions renderer-extensions)
       (.softbreak "<br>\n")
       (.build)))
 

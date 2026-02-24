@@ -928,6 +928,14 @@ body {
   padding-top: var(--navbar-height);
   background-color: #fafafc;
 }
+.prose {
+  --tw-prose-pre-bg: #0d1117;
+  --tw-prose-pre-code: #c9d1d9;
+}
+.prose pre code.hljs {
+  background: transparent;
+  padding: 0;
+}
 .navbar {
   position: fixed;
   top: 0;

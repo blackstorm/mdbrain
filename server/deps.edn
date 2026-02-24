@@ -35,8 +35,11 @@
         selmer/selmer {:mvn/version "1.12.69"}
 
         ;; Markdown 解析
-        org.commonmark/commonmark {:mvn/version "0.27.0"}
-        org.commonmark/commonmark-ext-yaml-front-matter {:mvn/version "0.27.0"}
+        org.commonmark/commonmark {:mvn/version "0.27.1"}
+        org.commonmark/commonmark-ext-yaml-front-matter {:mvn/version "0.27.1"}
+        org.commonmark/commonmark-ext-gfm-tables {:mvn/version "0.27.1"}
+        org.commonmark/commonmark-ext-task-list-items {:mvn/version "0.27.1"}
+        org.commonmark/commonmark-ext-gfm-strikethrough {:mvn/version "0.27.1"}
 
         ;; 日志
         org.clojure/tools.logging {:mvn/version "1.3.0"}

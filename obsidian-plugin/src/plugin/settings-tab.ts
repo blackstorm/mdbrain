@@ -17,11 +17,11 @@ export class MdbrainSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Publish URL")
-      .setDesc("Your Mdbrain publish URL (must route /obsidian/* to Console)")
+      .setDesc("Your Mdbrain publish URL")
       .addText((text) =>
         text
-          .setPlaceholder("https://notes.example.com")
-          .setValue(this.plugin.settings.serverUrl)
+          .setPlaceholder("https://console.example.com")
+          .setValue(this.plugin.settings.serverUrl ?? "")
           .onChange(async (value) => {
             this.plugin.settings.serverUrl = value;
             await this.plugin.saveSettings();
@@ -32,13 +32,10 @@ export class MdbrainSettingTab extends PluginSettingTab {
       .setName("Publish Key")
       .setDesc("Publish Key from Mdbrain Console")
       .addText((text) =>
-        text
-          .setPlaceholder("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
-          .setValue(this.plugin.settings.publishKey)
-          .onChange(async (value) => {
-            this.plugin.settings.publishKey = value;
-            await this.plugin.saveSettings();
-          }),
+        text.setPlaceholder("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx").onChange(async (value) => {
+          this.plugin.settings.publishKey = value;
+          await this.plugin.saveSettings();
+        }),
       );
 
     new Setting(containerEl)

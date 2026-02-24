@@ -71,7 +71,8 @@
                   (-> routes/console-app
                       (middleware/wrap-middleware)
                       (wrap-resource-with-context "/publics/console" "publics/console")
-                      (wrap-resource-with-context "/publics/shared" "publics/shared"))
+                      (wrap-resource-with-context "/publics/shared" "publics/shared")
+                      (middleware/wrap-noindex))
                   {:port port
                    :host host})]
       {:server server

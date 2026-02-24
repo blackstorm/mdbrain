@@ -107,6 +107,15 @@
                          (handler request))]
         (update response :headers (fnil merge {}) cors-headers))))))
 
+(defn wrap-noindex
+  "Add noindex headers for Console responses."
+  [handler]
+  (fn [request]
+    (let [response (handler request)]
+      (if (map? response)
+        (update response :headers (fnil assoc {}) "X-Robots-Tag" "noindex, nofollow")
+        response))))
+
 (defn wrap-app-host-binding
   "Enforce Host -> vault binding for the App server (8080).
    - Missing/invalid Host: 400

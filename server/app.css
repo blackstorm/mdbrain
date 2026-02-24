@@ -15,6 +15,18 @@ body {
     background-color: #fafafc;
 }
 
+/* Keep prose in control of code block layout; highlight.js only adds colors. */
+.prose {
+    --tw-prose-pre-bg: #0d1117;
+    --tw-prose-pre-code: #c9d1d9;
+}
+
+/* Align highlight.js with typography pre styles. */
+.prose pre code.hljs {
+    background: transparent;
+    padding: 0;
+}
+
 .navbar {
     position: fixed;
     top: 0;

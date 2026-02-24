@@ -14,4 +14,8 @@ Mdbrain 的同步策略默认是实时的，你也可以进行手动同步。
 ## 下面发布你的数字花园
 [[自托管方案]]
 [[使用 Docker compose 部署]]
-[[数学公式测试]]
+[[Math block test]]
+[[Table test]]
+[[Strikethrough test]]
+[[Task List test]]
+[[Code block test]]

@@ -1,10 +1,13 @@
 import type { App, PluginManifest } from "obsidian";
 import { TFile } from "obsidian";
 import { describe, expect, test, vi } from "vitest";
-import { DEFAULT_SETTINGS } from "./domain/types";
+import { DEFAULT_SETTINGS, type MdbrainSettings } from "./domain/types";
 import MdbrainPlugin from "./main";
 
-const createPlugin = (appOverrides?: Partial<App>) => {
+const createPlugin = (
+  appOverrides?: Partial<App>,
+  settingsOverrides?: Partial<MdbrainSettings>,
+) => {
   const app = {
     vault: { read: async () => "" },
     metadataCache: { getFileCache: () => null },
@@ -21,7 +24,7 @@ const createPlugin = (appOverrides?: Partial<App>) => {
     isDesktopOnly: false,
   };
   const plugin = new MdbrainPlugin(app, manifest);
-  plugin.settings = { ...DEFAULT_SETTINGS };
+  plugin.settings = { ...DEFAULT_SETTINGS, ...settingsOverrides };
   return plugin;
 };
 
@@ -63,7 +66,7 @@ describe("MdbrainPlugin.handleAssetChange", () => {
   });
 
   test("does not skip assets when reference index is not ready", async () => {
-    const plugin = createPlugin();
+    const plugin = createPlugin(undefined, { publishKey: "test-key" });
     const file = new TFile("assets/image.png", "image", "png");
     const syncAssetFile = vi.fn().mockResolvedValue(true);
 
@@ -82,7 +85,7 @@ describe("MdbrainPlugin.handleAssetChange", () => {
   });
 
   test("syncs when asset is referenced", async () => {
-    const plugin = createPlugin();
+    const plugin = createPlugin(undefined, { publishKey: "test-key" });
     const file = new TFile("assets/image.png", "image", "png");
     const syncAssetFile = vi.fn().mockResolvedValue(true);
 
@@ -163,10 +166,13 @@ describe("MdbrainPlugin.collectReferencedAssetFiles", () => {
 
 describe("MdbrainPlugin.handleFileRename", () => {
   test("renames reference index and syncs note", async () => {
-    const plugin = createPlugin({
-      metadataCache: { getFileCache: () => null } as never,
-      vault: { read: async () => "" } as never,
-    });
+    const plugin = createPlugin(
+      {
+        metadataCache: { getFileCache: () => null } as never,
+        vault: { read: async () => "" } as never,
+      },
+      { publishKey: "test-key" },
+    );
     const file = new TFile("notes/new.md");
     const syncNoteFile = vi.fn().mockResolvedValue({
       success: true,
@@ -233,7 +239,7 @@ describe("MdbrainPlugin.handleMarkdownCacheChanged", () => {
       },
     };
 
-    const plugin = createPlugin({ vault, metadataCache });
+    const plugin = createPlugin({ vault, metadataCache }, { publishKey: "test-key" });
 
     const syncNote = vi.fn().mockResolvedValue({
       success: true,
@@ -287,7 +293,7 @@ describe("MdbrainPlugin.handleMarkdownCacheChanged", () => {
   });
 
   test("uploads referenced assets after note sync", async () => {
-    const plugin = createPlugin();
+    const plugin = createPlugin(undefined, { publishKey: "test-key" });
     const note = new TFile("notes/a.md");
     const assetA = new TFile("assets/a.png", "a", "png");
     const assetB = new TFile("assets/b.png", "b", "png");
@@ -350,7 +356,7 @@ describe("MdbrainPlugin.handleMarkdownCacheChanged", () => {
 
   test("debounces multiple rapid cache changes and uses the latest content", async () => {
     vi.useFakeTimers();
-    const plugin = createPlugin();
+    const plugin = createPlugin(undefined, { publishKey: "test-key" });
     const note = new TFile("notes/a.md");
 
     const syncNoteFromCache = vi.fn().mockResolvedValue({
@@ -397,7 +403,7 @@ describe("MdbrainPlugin.handleMarkdownCacheChanged", () => {
   });
 
   test("uploads linked notes after note sync", async () => {
-    const plugin = createPlugin();
+    const plugin = createPlugin(undefined, { publishKey: "test-key" });
     const note = new TFile("notes/a.md");
     const linked = new TFile("notes/b.md");
     const linkedMap = new Map<string, TFile>([["note-b", linked]]);
@@ -467,7 +473,7 @@ describe("MdbrainPlugin.handleMarkdownCacheChanged", () => {
 
   test("sync does not write to file (no self-write loop)", async () => {
     vi.useFakeTimers();
-    const plugin = createPlugin();
+    const plugin = createPlugin(undefined, { publishKey: "test-key" });
     const note = new TFile("notes/a.md");
     const originalContent = "# Test content";
 
@@ -515,7 +521,7 @@ describe("MdbrainPlugin.handleMarkdownCacheChanged", () => {
 
   test("skips sync when note has no client ID", async () => {
     vi.useFakeTimers();
-    const plugin = createPlugin();
+    const plugin = createPlugin(undefined, { publishKey: "test-key" });
     const note = new TFile("notes/a.md");
 
     const getClientId = vi.fn().mockResolvedValue(null);
@@ -536,6 +542,29 @@ describe("MdbrainPlugin.handleMarkdownCacheChanged", () => {
     await vi.advanceTimersByTimeAsync(1200);
 
     expect(getClientId).toHaveBeenCalledWith(note);
+    expect(syncNoteFromCache).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  test("skips sync when publish config is missing", async () => {
+    vi.useFakeTimers();
+    const plugin = createPlugin();
+    const note = new TFile("notes/a.md");
+
+    const syncNoteFromCache = vi.fn();
+
+    const pluginAccess = plugin as unknown as {
+      syncNoteFromCache: (file: TFile, data: string, cache: unknown) => Promise<unknown>;
+      settings: { autoSync: boolean };
+      referenceIndex: { updateNote: (notePath: string) => void };
+    };
+    pluginAccess.syncNoteFromCache = syncNoteFromCache;
+    pluginAccess.settings.autoSync = true;
+    pluginAccess.referenceIndex = { updateNote: vi.fn() };
+
+    plugin.handleMarkdownCacheChanged(note, "content", null);
+    await vi.advanceTimersByTimeAsync(1200);
+
     expect(syncNoteFromCache).not.toHaveBeenCalled();
     vi.useRealTimers();
   });
