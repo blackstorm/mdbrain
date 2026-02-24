@@ -272,7 +272,7 @@
         (h/from :notes)
         (h/where [:and [:= :vault_id vault-id]
                   [:is :deleted_at nil]
-                  [:like :content "%[[%]]"]]))))
+                  [:like :content "%[[%]]%"]]))))
 
 (defn get-note-by-path [vault-id path]
   (execute-one!

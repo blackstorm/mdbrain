@@ -396,7 +396,7 @@
         (is (= [:and
                 [:= :vault_id vault-id]
                 [:is :deleted_at nil]
-                [:like :content "%[[%]]"]]
+                [:like :content "%[[%]]%"]]
                (:where @captured-query)))))))
 
 (deftest test-get-note
