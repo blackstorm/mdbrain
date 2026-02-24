@@ -383,6 +383,22 @@
       (is (= 2 (count results)))
       (is (every? #(contains? % :path) results)))))
 
+(deftest test-list-notes-with-wikilinks-by-vault
+  (testing "Build query with wikilink LIKE pattern"
+    (let [vault-id (utils/generate-uuid)
+          captured-query (atom nil)]
+      (with-redefs [db/execute! (fn [query]
+                                  (reset! captured-query query)
+                                  [])]
+        (is (= [] (db/list-notes-with-wikilinks-by-vault vault-id)))
+        (is (= [:client_id :path :content] (:select @captured-query)))
+        (is (= [:notes] (:from @captured-query)))
+        (is (= [:and
+                [:= :vault_id vault-id]
+                [:is :deleted_at nil]
+                [:like :content "%[[%]]"]]
+               (:where @captured-query)))))))
+
 (deftest test-get-note
   (testing "Get note by ID"
     (let [tenant-id (utils/generate-uuid)

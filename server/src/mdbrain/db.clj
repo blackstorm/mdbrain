@@ -265,6 +265,15 @@
         (h/where [:and [:= :vault_id vault-id]
                   [:is :deleted_at nil]]))))
 
+(defn list-notes-with-wikilinks-by-vault
+  [vault-id]
+  (execute!
+    (-> (h/select :client_id :path :content)
+        (h/from :notes)
+        (h/where [:and [:= :vault_id vault-id]
+                  [:is :deleted_at nil]
+                  [:like :content "%[[%]]"]]))))
+
 (defn get-note-by-path [vault-id path]
   (execute-one!
     (-> (h/select :*)
