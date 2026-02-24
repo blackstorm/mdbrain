@@ -32,12 +32,10 @@ export class MdbrainSettingTab extends PluginSettingTab {
       .setName("Publish Key")
       .setDesc("Publish Key from Mdbrain Console")
       .addText((text) =>
-        text
-          .setPlaceholder("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
-          .onChange(async (value) => {
-            this.plugin.settings.publishKey = value;
-            await this.plugin.saveSettings();
-          }),
+        text.setPlaceholder("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx").onChange(async (value) => {
+          this.plugin.settings.publishKey = value;
+          await this.plugin.saveSettings();
+        }),
       );
 
     new Setting(containerEl)
@@ -63,10 +61,7 @@ export class MdbrainSettingTab extends PluginSettingTab {
               5000,
             );
           } else {
-            new Notice(
-              `Connection failed: ${result.error || "Unknown error"}`,
-              5000,
-            );
+            new Notice(`Connection failed: ${result.error || "Unknown error"}`, 5000);
           }
         }),
       );
@@ -90,12 +85,10 @@ export class MdbrainSettingTab extends PluginSettingTab {
       .setName("Auto publish")
       .setDesc("Automatically publish on file changes")
       .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.autoSync)
-          .onChange(async (value) => {
-            this.plugin.settings.autoSync = value;
-            await this.plugin.saveSettings();
-          }),
+        toggle.setValue(this.plugin.settings.autoSync).onChange(async (value) => {
+          this.plugin.settings.autoSync = value;
+          await this.plugin.saveSettings();
+        }),
       );
   }
 }
