@@ -6,9 +6,15 @@
    [mdbrain.handlers.console.common :as common]
    [mdbrain.object-store :as object-store]
    [mdbrain.response :as resp]
+   [mdbrain.template-assets :as template-assets]
    [mdbrain.utils :as utils]
    [mdbrain.utils.bytes :as utils.bytes]
    [selmer.parser :as selmer]))
+
+(defn- render-template
+  [template context]
+  (template-assets/register-filter!)
+  (selmer/render-file template context))
 
 (defn- enrich-vault-data
   "Add computed fields to vault for display."
@@ -37,10 +43,10 @@
         tenant (db/get-tenant tenant-id)
         vaults (db/list-vaults-by-tenant tenant-id)
         vaults-with-data (mapv enrich-vault-data vaults)]
-    (resp/html (selmer/render-file "templates/console/vaults.html"
-                                   {:tenant tenant
-                                    :vaults vaults-with-data
-                                    :csrf-token (:anti-forgery-token request)}))))
+    (resp/html (render-template "templates/console/vaults.html"
+                                {:tenant tenant
+                                 :vaults vaults-with-data
+                                 :csrf-token (:anti-forgery-token request)}))))
 
 (defn list-vaults
   "List all vaults for current tenant."
@@ -48,8 +54,8 @@
   (let [tenant-id (get-in request [:session :tenant-id])
         vaults (db/list-vaults-by-tenant tenant-id)
         vaults-with-data (mapv enrich-vault-data vaults)]
-    (resp/html (selmer/render-file "templates/console/vault-list.html"
-                                   {:vaults vaults-with-data}))))
+    (resp/html (render-template "templates/console/vault-list.html"
+                                {:vaults vaults-with-data}))))
 
 (defn create-vault
   "Create a new vault."
@@ -231,10 +237,10 @@
             root-note-id (:root-note-id vault)]
         {:status 200
          :headers {"Content-Type" "text/html"}
-         :body (selmer/render-file "templates/console/root-note-selector.html"
-                                   {:notes notes
-                                    :vault-id vault-id
-                                    :root-note-id root-note-id})}))))
+         :body (render-template "templates/console/root-note-selector.html"
+                                {:notes notes
+                                 :vault-id vault-id
+                                 :root-note-id root-note-id})}))))
 
 (defn renew-vault-sync-key
   "Generate a new publish key for a vault."

@@ -8,11 +8,11 @@
   {% if vault.favicon-version %}
   <link rel="icon" href="/favicon.ico?v={{ vault.favicon-version }}">
   {% else %}
-  <link rel="icon" type="image/png" href="/publics/shared/images/favicon.png">
+  <link rel="icon" type="image/png" href='{{ "/publics/shared/images/favicon.png"|asset_url }}'>
   {% endif %}
-  <link rel="stylesheet" href="/publics/app/css/app.css">
-  <link rel="stylesheet" href="/publics/app/css/highlight-github-dark.min.css">
-  <link rel="stylesheet" href="/publics/app/katex/katex-swap.min.css">
+  <link rel="stylesheet" href='{{ "/publics/app/css/app.css"|asset_url }}'>
+  <link rel="stylesheet" href='{{ "/publics/app/css/highlight-github-dark.min.css"|asset_url }}'>
+  <link rel="stylesheet" href='{{ "/publics/app/katex/katex-swap.min.css"|asset_url }}'>
   {{ vault.custom-head-html|safe }}
 </head>
 <body>
@@ -32,9 +32,9 @@
     </header>
     {% block content %}{% endblock %}
   </div>
-  <script src="/publics/app/js/highlight.min.js"></script>
-  <script src="/publics/app/katex/katex.min.js"></script>
-  <script src="/publics/shared/htmx.min.js"></script>
-  <script src="/publics/app/js/app.js"></script>
+  <script src='{{ "/publics/app/js/highlight.min.js"|asset_url }}'></script>
+  <script src='{{ "/publics/app/katex/katex.min.js"|asset_url }}'></script>
+  <script src='{{ "/publics/shared/htmx.min.js"|asset_url }}'></script>
+  <script src='{{ "/publics/app/js/app.js"|asset_url }}'></script>
 </body>
 </html>

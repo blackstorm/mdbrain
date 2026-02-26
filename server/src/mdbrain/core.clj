@@ -7,6 +7,7 @@
    [mdbrain.db :as db]
    [mdbrain.lucide-icon :as lucide-icon]
    [mdbrain.middleware :as middleware]
+   [mdbrain.template-assets :as template-assets]
    [mdbrain.object-store :as object-store]
    [mdbrain.routes :as routes]
    [ring.adapter.undertow :as undertow]
@@ -48,6 +49,7 @@
 (defn start-app-server []
   (let [port (config/get-config :server :app :port)
         host (config/get-config :server :app :host)]
+    (template-assets/register-filter!)
     (log/info "Starting App server on" host ":" port)
     (let [server (undertow/run-undertow
                   (-> routes/app-app
@@ -66,6 +68,7 @@
 (defn start-console-server []
   (let [port (config/get-config :server :console :port)
         host (config/get-config :server :console :host)]
+    (template-assets/register-filter!)
     (log/info "Starting Console server on" host ":" port)
     (let [server (undertow/run-undertow
                   (-> routes/console-app
@@ -92,6 +95,7 @@
       (System/exit 1)))
 
   (lucide-icon/init!)
+  (template-assets/register-filter!)
 
   (log/info "Initializing database...")
   (db/init-db!)

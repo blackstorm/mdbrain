@@ -78,7 +78,9 @@
                     "-Djava.awt.headless=true"]
          :exec-fn cognitect.test-runner.api/test}
 
-  :build {:deps {io.github.clojure/tools.build {:git/tag "v0.10.5" :git/sha "2a21b7a"}}
+  ;; extra-paths: build.clj requires mdbrain.asset-manifest from src
+  :build {:extra-paths ["src" "resources"]
+          :deps {io.github.clojure/tools.build {:git/tag "v0.10.5" :git/sha "2a21b7a"}}
           :jvm-opts ["--enable-native-access=ALL-UNNAMED"
                      "-Djava.awt.headless=true"]
           :ns-default build}}}

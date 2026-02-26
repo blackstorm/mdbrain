@@ -91,7 +91,7 @@ plugin-dev:
 	@echo "Starting Obsidian plugin development mode..."
 	@cd obsidian-plugin && pnpm dev
 
-build: backend-build assets-build plugin-build
+build: assets-build backend-build plugin-build
 
 backend-build:
 	@echo "Building backend uberjar..."

@@ -4,8 +4,14 @@
    [clojure.string :as str]
    [mdbrain.db :as db]
    [mdbrain.response :as resp]
+   [mdbrain.template-assets :as template-assets]
    [mdbrain.utils :as utils]
    [selmer.parser :as selmer]))
+
+(defn- render-template
+  [template context]
+  (template-assets/register-filter!)
+  (selmer/render-file template context))
 
 (defn init-console
   "Initialize system with first console user."
@@ -62,14 +68,14 @@
 (defn login-page
   "Render login page."
   [request]
-  (resp/html (selmer/render-file "templates/console/login.html"
-                                 {:csrf-token (:anti-forgery-token request)})))
+  (resp/html (render-template "templates/console/login.html"
+                              {:csrf-token (:anti-forgery-token request)})))
 
 (defn init-page
   "Render initialization page."
   [request]
-  (resp/html (selmer/render-file "templates/console/init.html"
-                                 {:csrf-token (:anti-forgery-token request)})))
+  (resp/html (render-template "templates/console/init.html"
+                              {:csrf-token (:anti-forgery-token request)})))
 
 (defn change-password
   "Change current console user's password."

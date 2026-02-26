@@ -4,7 +4,7 @@
   - with-text: show text beside icon (default: true)
 -->
 <div class="flex items-center gap-3">
-    <img src="/publics/console/images/logo.png"
+    <img src='{{ "/publics/console/images/logo.png"|asset_url }}'
          alt="Mdbrain Logo"
          class="{% if size = 'sm' %}w-8 h-8{% else %}{% if size = 'lg' %}w-16 h-16{% else %}w-10 h-10{% endif %}{% endif %} object-contain">
     {% if with-text|default:true %}

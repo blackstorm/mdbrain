@@ -6,10 +6,10 @@
     <meta name="robots" content="noindex, nofollow">
     <meta name="csrf-token" content="{{csrf-token}}">
     <title>Console Dashboard - Mdbrain</title>
-    <link rel="icon" type="image/png" href="/publics/shared/images/favicon.png">
-    <link href="/publics/console/css/console.css" rel="stylesheet">
-    <script src="/publics/shared/htmx.min.js"></script>
-    <script src="/publics/console/js/console.js"></script>
+    <link rel="icon" type="image/png" href='{{ "/publics/shared/images/favicon.png"|asset_url }}'>
+    <link href='{{ "/publics/console/css/console.css"|asset_url }}' rel="stylesheet">
+    <script src='{{ "/publics/shared/htmx.min.js"|asset_url }}'></script>
+    <script src='{{ "/publics/console/js/console.js"|asset_url }}'></script>
 </head>
 <body hx-headers='{"X-CSRF-Token":"{{csrf-token}}"}'>
     <div id="notification-container" class="fixed top-4 right-4 z-[9999]"></div>

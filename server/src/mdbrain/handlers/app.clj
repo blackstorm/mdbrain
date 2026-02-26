@@ -8,9 +8,15 @@
    [mdbrain.middleware :as middleware]
    [mdbrain.object-store :as object-store]
    [mdbrain.response :as resp]
+   [mdbrain.template-assets :as template-assets]
    [mdbrain.utils.stream :as utils.stream]
    [selmer.parser :as selmer])
   (:import [java.io InputStream]))
+
+(defn- render-template
+  [template context]
+  (template-assets/register-filter!)
+  (selmer/render-file template context))
 
 (defn get-current-vault
   [request]
@@ -145,7 +151,7 @@
 
                   push-url (build-push-url current-url from-note-id client-id root-note-id)
 
-                  html-body (selmer/render-file "templates/app/note.html" render-data)]
+                  html-body (render-template "templates/app/note.html" render-data)]
 
               {:status 200
                :headers {"Content-Type" "text/html; charset=utf-8"
@@ -191,19 +197,19 @@
                   (if is-htmx?
                     {:status 200
                      :headers {"Content-Type" "text/html; charset=utf-8"}
-                     :body (selmer/render-file "templates/app/note.html" render-data)}
-                    (resp/html (selmer/render-file "templates/app/note-page.html"
-                                                   {:notes [render-data]
-                                                    :vault vault
-                                                    :description description}))))
+                     :body (render-template "templates/app/note.html" render-data)}
+                    (resp/html (render-template "templates/app/note-page.html"
+                                                {:notes [render-data]
+                                                 :vault vault
+                                                 :description description}))))
                 (let [notes (db/list-notes-by-vault vault-id)]
-                  (resp/html (selmer/render-file "templates/app/home.html"
-                                                 {:vault vault
-                                                  :notes notes}))))
+                  (resp/html (render-template "templates/app/home.html"
+                                              {:vault vault
+                                               :notes notes}))))
               (let [notes (db/list-notes-by-vault vault-id)]
-                (resp/html (selmer/render-file "templates/app/home.html"
-                                               {:vault vault
-                                                :notes notes}))))
+                (resp/html (render-template "templates/app/home.html"
+                                            {:vault vault
+                                             :notes notes}))))
 
             (let [valid-notes (keep #(db/get-note-for-app vault-id %) path-client-ids)
                   valid-client-ids (mapv :client-id valid-notes)
@@ -231,16 +237,16 @@
                   {:status 200
                    :headers {"Content-Type" "text/html; charset=utf-8"
                              "HX-Push-Url" push-url}
-                   :body (selmer/render-file "templates/app/note.html" render-data)})
+                   :body (render-template "templates/app/note.html" render-data)})
 
                 :else
                 (let [notes-data (mapv #(prepare-note-data % vault-id) valid-notes)
                       first-note (first valid-notes)
                       description (md/extract-description (:content first-note) 160)
-                      response-body (selmer/render-file "templates/app/note-page.html"
-                                                        {:notes notes-data
-                                                         :vault vault
-                                                         :description description})]
+                      response-body (render-template "templates/app/note-page.html"
+                                                     {:notes notes-data
+                                                      :vault vault
+                                                      :description description})]
                   (if needs-correction?
                     {:status 200
                      :headers {"Content-Type" "text/html; charset=utf-8"

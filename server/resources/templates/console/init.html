@@ -6,17 +6,17 @@
     <meta name="robots" content="noindex, nofollow">
     <meta name="csrf-token" content="{{csrf-token}}">
     <title>Welcome - Mdbrain</title>
-    <link rel="icon" type="image/png" href="/publics/shared/images/favicon.png">
-    <link href="/publics/console/css/console.css" rel="stylesheet">
-    <script src="/publics/shared/htmx.min.js"></script>
-    <script src="/publics/console/js/console.js"></script>
+    <link rel="icon" type="image/png" href='{{ "/publics/shared/images/favicon.png"|asset_url }}'>
+    <link href='{{ "/publics/console/css/console.css"|asset_url }}' rel="stylesheet">
+    <script src='{{ "/publics/shared/htmx.min.js"|asset_url }}'></script>
+    <script src='{{ "/publics/console/js/console.js"|asset_url }}'></script>
 </head>
 <body class="auth-page">
     <div class="init-container">
         <!-- Header -->
         <div class="init-header">
             <div class="welcome-icon">
-                <img src="/publics/console/images/logo.png" alt="Mdbrain Logo" class="w-10 h-10 object-contain">
+                <img src='{{ "/publics/console/images/logo.png"|asset_url }}' alt="Mdbrain Logo" class="w-10 h-10 object-contain">
             </div>
             <h1 class="text-[1.375rem] font-semibold text-[var(--text-primary)] m-0 mb-2 text-center">Welcome to Mdbrain</h1>
             <p class="text-sm text-[var(--text-secondary)] m-0 text-center">Create an console account to get started</p>
