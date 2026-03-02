@@ -100,6 +100,18 @@ test.describe.serial('console auth and management flows', () => {
     await expect(page).toHaveURL(/\/console\/login$/);
   });
 
+  test('logout redirects to login and blocks console', async ({ page }) => {
+    await ensureInitialized(page);
+    await login(page);
+
+    await page.getByRole('button', { name: 'Account' }).click();
+    await page.getByRole('button', { name: 'Logout' }).click();
+    await page.waitForURL('**/console/login');
+
+    await page.goto('/console');
+    await expect(page).toHaveURL(/\/console\/login$/);
+  });
+
   test('creates, edits, and deletes a site', async ({ page }) => {
     const id = uniqueId();
     const siteName = `E2E Site ${id}`;
@@ -135,6 +147,36 @@ test.describe.serial('console auth and management flows', () => {
 
     await expect(vaultCard(page, updatedName)).toHaveCount(0);
     await expect(page.getByText('No sites yet')).toBeVisible();
+  });
+
+  test('rejects duplicate domain create attempt', async ({ page }) => {
+    await ensureInitialized(page);
+    await login(page);
+
+    const { siteName, siteDomain } = await createSite(page, 'Duplicate Domain Site');
+    const duplicateName = `Duplicate Domain Retry ${uniqueId()}`;
+
+    await page.getByRole('button', { name: 'New Site' }).click();
+    await page.locator('#create-name').fill(duplicateName);
+    await page.locator('#create-domain').fill(siteDomain);
+    await page.locator('#modal-create button[type="submit"]').click();
+
+    await expect(page.locator('.vault-card .vault-domain', { hasText: siteDomain })).toHaveCount(1);
+    await expect(vaultCard(page, duplicateName)).toHaveCount(0);
+
+    await deleteSite(page, siteName);
+  });
+
+  test('shows warning when root note has no synced notes', async ({ page }) => {
+    await ensureInitialized(page);
+    await login(page);
+
+    const { siteName } = await createSite(page, 'No Note Warning Site');
+    const card = vaultCard(page, siteName);
+
+    await expect(card).toContainText('No notes synced yet. Please use the Obsidian plugin to sync files before setting a homepage.');
+
+    await deleteSite(page, siteName);
   });
 
   test('saves and reloads custom head HTML', async ({ page }) => {
