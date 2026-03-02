@@ -7,16 +7,9 @@
    [mdbrain.markdown :as md]
    [mdbrain.middleware :as middleware]
    [mdbrain.object-store :as object-store]
-   [mdbrain.response :as resp]
-   [mdbrain.template-assets :as template-assets]
-   [mdbrain.utils.stream :as utils.stream]
-   [selmer.parser :as selmer])
-  (:import [java.io InputStream]))
-
-(defn- render-template
-  [template context]
-  (template-assets/register-filter!)
-  (selmer/render-file template context))
+   [mdbrain.view.htmx :as htmx]
+   [mdbrain.view.render :as render]
+   [mdbrain.utils.stream :as utils.stream]))
 
 (defn get-current-vault
   [request]
@@ -135,30 +128,6 @@
             :updated-at (:updated-at note)}
      :backlinks backlinks-with-meta}))
 
-(defn get-note-fragment
-  [request]
-  (let [client-id (get-in request [:path-params :id])
-        ]
-    (with-vault request
-      (fn [vault request]
-        (let [vault-id (:id vault)]
-          (if-let [note (db/get-note-for-app vault-id client-id)]
-            (let [render-data (prepare-note-data note vault-id)
-
-                  from-note-id (get-in request [:headers "x-from-note-id"])
-                  current-url (get-in request [:headers "hx-current-url"])
-                  root-note-id (:root-note-id vault)
-
-                  push-url (build-push-url current-url from-note-id client-id root-note-id)
-
-                  html-body (render-template "templates/app/note.html" render-data)]
-
-              {:status 200
-               :headers {"Content-Type" "text/html; charset=utf-8"
-                         "HX-Push-Url" push-url}
-               :body html-body})
-            {:status 404 :body "Note not found"}))))))
-
 (defn- extract-logo-hash
   "Extract content hash from logo-object-key.
    Format: site/logo/{hash}.{ext} -> returns {hash}"
@@ -184,7 +153,7 @@
   [request]
   (let [path (get-in request [:path-params :path] "/")
         path-client-ids (parse-path-ids path)
-        is-htmx? (get-in request [:headers "hx-request"])]
+        is-htmx? (htmx/is-htmx-request? request)]
     (with-vault request
       (fn [vault request]
         (let [vault-id (:id vault)
@@ -195,21 +164,19 @@
                 (let [render-data (prepare-note-data root-note vault-id)
                       description (md/extract-description (:content root-note) 160)]
                   (if is-htmx?
-                    {:status 200
-                     :headers {"Content-Type" "text/html; charset=utf-8"}
-                     :body (render-template "templates/app/note.html" render-data)}
-                    (resp/html (render-template "templates/app/note-page.html"
-                                                {:notes [render-data]
-                                                 :vault vault
-                                                 :description description}))))
+                    (render/fragment "templates/app/note.html" render-data)
+                    (render/page "templates/app/note-page.html"
+                                 {:notes [render-data]
+                                  :vault vault
+                                  :description description})))
                 (let [notes (db/list-notes-by-vault vault-id)]
-                  (resp/html (render-template "templates/app/home.html"
-                                              {:vault vault
-                                               :notes notes}))))
+                  (render/page "templates/app/home.html"
+                               {:vault vault
+                                :notes notes})))
               (let [notes (db/list-notes-by-vault vault-id)]
-                (resp/html (render-template "templates/app/home.html"
-                                            {:vault vault
-                                             :notes notes}))))
+                (render/page "templates/app/home.html"
+                             {:vault vault
+                              :notes notes})))
 
             (let [valid-notes (keep #(db/get-note-for-app vault-id %) path-client-ids)
                   valid-client-ids (mapv :client-id valid-notes)
@@ -234,25 +201,20 @@
                       push-url (or corrected-path
                                    (build-push-url current-url from-note-id (:client-id last-note) root-note-id))]
 
-                  {:status 200
-                   :headers {"Content-Type" "text/html; charset=utf-8"
-                             "HX-Push-Url" push-url}
-                   :body (render-template "templates/app/note.html" render-data)})
+                  (-> (render/fragment "templates/app/note.html" render-data)
+                      (htmx/with-push-url push-url)))
 
                 :else
                 (let [notes-data (mapv #(prepare-note-data % vault-id) valid-notes)
                       first-note (first valid-notes)
                       description (md/extract-description (:content first-note) 160)
-                      response-body (render-template "templates/app/note-page.html"
-                                                     {:notes notes-data
-                                                      :vault vault
-                                                      :description description})]
+                      response (render/page "templates/app/note-page.html"
+                                            {:notes notes-data
+                                             :vault vault
+                                             :description description})]
                   (if needs-correction?
-                    {:status 200
-                     :headers {"Content-Type" "text/html; charset=utf-8"
-                               "HX-Replace-Url" corrected-path}
-                     :body response-body}
-                    (resp/html response-body)))))))))))
+                    (htmx/with-replace-url response corrected-path)
+                    response))))))))))
 
 ;; ============================================================
 ;; Logo & Favicon Serving

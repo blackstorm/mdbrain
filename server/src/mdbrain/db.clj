@@ -165,6 +165,58 @@
 (defn list-vaults-by-tenant [tenant-id]
   (find-all-by :vaults :tenant_id tenant-id :order-by :created_at))
 
+(defn- list-note-selector-options-by-vault-ids
+  [vault-ids]
+  (if (seq vault-ids)
+    (let [placeholders (str/join "," (repeat (count vault-ids) "?"))
+          sql (str "SELECT vault_id, client_id, path "
+                   "FROM ("
+                   "  SELECT vault_id, client_id, path, "
+                   "         ROW_NUMBER() OVER (PARTITION BY vault_id ORDER BY path) AS row_num "
+                   "  FROM notes "
+                   "  WHERE deleted_at IS NULL AND vault_id IN (" placeholders ")"
+                   ") ranked_notes "
+                   "WHERE row_num <= 50 "
+                   "ORDER BY vault_id, path")
+          rows (execute! (into [sql] vault-ids))]
+      (reduce (fn [acc {:keys [vault-id client-id path]}]
+                (update acc vault-id (fnil conj []) {:client-id client-id
+                                                     :path path}))
+              {}
+              rows))
+    {}))
+
+(defn- storage-size-by-vault-ids
+  [vault-ids]
+  (if (seq vault-ids)
+    (->> (execute!
+           (-> (h/select :vault_id
+                         [(hsql/call :coalesce
+                                     (hsql/call :sum :size_bytes)
+                                     0)
+                          :total_bytes])
+               (h/from :assets)
+               (h/where [:and [:in :vault_id vault-ids]
+                         [:is :deleted_at nil]])
+               (h/group-by :vault_id)))
+         (into {} (map (fn [{:keys [vault-id total-bytes]}]
+                         [vault-id total-bytes]))))
+    {}))
+
+(defn list-vaults-dashboard-data
+  "Load vaults and dashboard display data in batch to avoid per-vault queries."
+  [tenant-id]
+  (let [vaults (list-vaults-by-tenant tenant-id)
+        vault-ids (mapv :id vaults)
+        notes-by-vault (list-note-selector-options-by-vault-ids vault-ids)
+        storage-by-vault (storage-size-by-vault-ids vault-ids)]
+    (mapv (fn [vault]
+            (let [vault-id (:id vault)]
+              (assoc vault
+                     :notes (get notes-by-vault vault-id [])
+                     :storage-bytes (or (get storage-by-vault vault-id) 0))))
+          vaults)))
+
 (defn delete-vault! [id]
   (execute-one!
     (-> (h/delete-from :vaults)

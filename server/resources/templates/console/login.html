@@ -1,95 +1,45 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="noindex, nofollow">
-    <meta name="csrf-token" content="{{csrf-token}}">
-    <title>Login - Mdbrain</title>
-    <link rel="icon" type="image/png" href='{{ "/publics/shared/images/favicon.png"|asset_url }}'>
-    <link href='{{ "/publics/console/css/console.css"|asset_url }}' rel="stylesheet">
-    <script src='{{ "/publics/shared/htmx.min.js"|asset_url }}'></script>
-    <script src='{{ "/publics/console/js/console.js"|asset_url }}'></script>
-</head>
-<body class="auth-page">
-    <div class="login-container">
-        <!-- Header -->
-        <div class="login-header">
-            {% with size="md" %}
-              {% include "templates/console/components/logo.html" %}
-            {% endwith %}
-            <p class="text-sm text-[var(--text-secondary)] mt-2 mb-0">Login to console dashboard</p>
-        </div>
+{% extends "templates/console/base.html" %}
 
-        <!-- Body -->
-        <div class="login-body">
-            <div id="message-container"></div>
+{% block title %}Login - Mdbrain{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block page_id %}login{% endblock %}
 
-            <form hx-post="/console/login"
-                  hx-target="#message-container"
-                  hx-swap="innerHTML"
-                  hx-disabled-elt="button"
-                  hx-indicator=".spinner">
-                <input type="hidden" name="__anti-forgery-token" value="{{csrf-token}}">
-
-                {% with id="username" name="username" type="email" label="Email" placeholder="console@example.com" autocomplete="username" autofocus=true required=true %}
-                  {% include "templates/console/components/form-field.html" %}
-                {% endwith %}
-
-                {% with id="password" name="password" type="password" label="Password" placeholder="••••••••" autocomplete="current-password" required=true %}
-                  {% include "templates/console/components/form-field.html" %}
-                {% endwith %}
-
-                <button type="submit" class="btn-primary">
-                    <span class="flex items-center justify-center gap-2">
-                        <span class="spinner"></span>
-                        <span>Login</span>
-                    </span>
-                </button>
-            </form>
-        </div>
+{% block content %}
+<div class="login-container">
+    <!-- Header -->
+    <div class="login-header">
+        {% with size="md" %}
+          {% include "templates/console/components/logo.html" %}
+        {% endwith %}
+        <p class="text-sm text-[var(--text-secondary)] mt-2 mb-0">Login to console dashboard</p>
     </div>
 
-    <script>
-        document.body.addEventListener('htmx:afterRequest', function(event) {
-            if (event.detail.pathInfo.requestPath !== '/console/login') return;
+    <!-- Body -->
+    <div class="login-body">
+        <div id="message-container"></div>
 
-            if (event.detail.successful) {
-                try {
-                    const response = JSON.parse(event.detail.xhr.response);
-                    if (response.success) {
-                        event.detail.target.innerHTML = `
-                            <div class="alert alert-success">
-                                {{ lucide_icon("check-circle", "icon-sm") }}
-                                <span>Login successful, redirecting...</span>
-                            </div>
-                        `;
-                        setTimeout(() => window.location.href = '/console', 800);
-                    } else {
-                        event.detail.target.innerHTML = `
-                            <div class="alert alert-error">
-                                {{ lucide_icon("alert-circle", "icon-sm") }}
-                                <span>${response.error || 'Login failed'}</span>
-                            </div>
-                        `;
-                    }
-                } catch (e) {
-                    event.detail.target.innerHTML = `
-                        <div class="alert alert-error">
-                            {{ lucide_icon("alert-circle", "icon-sm") }}
-                            <span>Server response error</span>
-                        </div>
-                    `;
-                }
-            } else {
-                event.detail.target.innerHTML = `
-                    <div class="alert alert-error">
-                        {{ lucide_icon("alert-circle", "icon-sm") }}
-                        <span>Network error, please try again</span>
-                    </div>
-                `;
-            }
-        });
-    </script>
-</body>
-</html>
+        <form hx-post="/console/login"
+              hx-target="#message-container"
+              hx-swap="innerHTML"
+              hx-disabled-elt="button"
+              hx-indicator=".spinner">
+            <input type="hidden" name="__anti-forgery-token" value="{{csrf-token}}">
+
+            {% with id="username" name="username" type="email" label="Email" placeholder="console@example.com" autocomplete="username" autofocus=true required=true %}
+              {% include "templates/console/components/form-field.html" %}
+            {% endwith %}
+
+            {% with id="password" name="password" type="password" label="Password" placeholder="••••••••" autocomplete="current-password" required=true %}
+              {% include "templates/console/components/form-field.html" %}
+            {% endwith %}
+
+            <button type="submit" class="btn-primary">
+                <span class="flex items-center justify-center gap-2">
+                    <span class="spinner"></span>
+                    <span>Login</span>
+                </span>
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

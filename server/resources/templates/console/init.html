@@ -1,99 +1,49 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="noindex, nofollow">
-    <meta name="csrf-token" content="{{csrf-token}}">
-    <title>Welcome - Mdbrain</title>
-    <link rel="icon" type="image/png" href='{{ "/publics/shared/images/favicon.png"|asset_url }}'>
-    <link href='{{ "/publics/console/css/console.css"|asset_url }}' rel="stylesheet">
-    <script src='{{ "/publics/shared/htmx.min.js"|asset_url }}'></script>
-    <script src='{{ "/publics/console/js/console.js"|asset_url }}'></script>
-</head>
-<body class="auth-page">
-    <div class="init-container">
-        <!-- Header -->
-        <div class="init-header">
-            <div class="welcome-icon">
-                <img src='{{ "/publics/console/images/logo.png"|asset_url }}' alt="Mdbrain Logo" class="w-10 h-10 object-contain">
-            </div>
-            <h1 class="text-[1.375rem] font-semibold text-[var(--text-primary)] m-0 mb-2 text-center">Welcome to Mdbrain</h1>
-            <p class="text-sm text-[var(--text-secondary)] m-0 text-center">Create an console account to get started</p>
+{% extends "templates/console/base.html" %}
+
+{% block title %}Welcome - Mdbrain{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block page_id %}init{% endblock %}
+
+{% block content %}
+<div class="init-container">
+    <!-- Header -->
+    <div class="init-header">
+        <div class="welcome-icon">
+            <img src='{{ "/publics/console/images/logo.png"|asset_url }}' alt="Mdbrain Logo" class="w-10 h-10 object-contain">
         </div>
-
-        <!-- Body -->
-        <div class="init-body">
-            <div id="message-container"></div>
-
-            <form hx-post="/console/init"
-                  hx-target="#message-container"
-                  hx-swap="innerHTML"
-                  hx-disabled-elt="button"
-                  hx-indicator=".spinner">
-                <input type="hidden" name="__anti-forgery-token" value="{{csrf-token}}">
-
-                {% with id="tenant-name" name="tenant-name" label="Organization Name" placeholder="My Organization" hint="Your company or personal workspace name" autofocus=true required=true %}
-                  {% include "templates/console/components/form-field.html" %}
-                {% endwith %}
-
-                {% with id="username" name="username" type="email" label="console Email" placeholder="console@example.com" autocomplete="username" required=true %}
-                  {% include "templates/console/components/form-field.html" %}
-                {% endwith %}
-
-                {% with id="password" name="password" type="password" label="Password" placeholder="••••••••" autocomplete="new-password" minlength="8" hint="At least 8 characters, use a strong password" required=true %}
-                  {% include "templates/console/components/form-field.html" %}
-                {% endwith %}
-
-                <button type="submit" class="btn-primary">
-                    <span class="spinner"></span>
-                    {{ lucide_icon("rocket", "icon-md") }}
-                    <span>Create Account</span>
-                </button>
-            </form>
-        </div>
+        <h1 class="text-[1.375rem] font-semibold text-[var(--text-primary)] m-0 mb-2 text-center">Welcome to Mdbrain</h1>
+        <p class="text-sm text-[var(--text-secondary)] m-0 text-center">Create an console account to get started</p>
     </div>
 
-    <script>
-        document.body.addEventListener('htmx:afterRequest', function(event) {
-            if (event.detail.pathInfo.requestPath !== '/console/init') return;
+    <!-- Body -->
+    <div class="init-body">
+        <div id="message-container"></div>
 
-            if (event.detail.successful) {
-                try {
-                    const response = JSON.parse(event.detail.xhr.response);
-                    if (response.success) {
-                        event.detail.target.innerHTML = `
-                            <div class="alert alert-success">
-                                {{ lucide_icon("check-circle", "icon-sm") }}
-                                <span>Account created successfully, redirecting...</span>
-                            </div>
-                        `;
-                        setTimeout(() => window.location.href = '/console/login', 1200);
-                    } else {
-                        event.detail.target.innerHTML = `
-                            <div class="alert alert-error">
-                                {{ lucide_icon("alert-circle", "icon-sm") }}
-                                <span>${response.error || 'Creation failed'}</span>
-                            </div>
-                        `;
-                    }
-                } catch (e) {
-                    event.detail.target.innerHTML = `
-                        <div class="alert alert-error">
-                            {{ lucide_icon("alert-circle", "icon-sm") }}
-                            <span>Server response error</span>
-                        </div>
-                    `;
-                }
-            } else {
-                event.detail.target.innerHTML = `
-                    <div class="alert alert-error">
-                        {{ lucide_icon("alert-circle", "icon-sm") }}
-                        <span>Network error, please try again</span>
-                    </div>
-                `;
-            }
-        });
-    </script>
-</body>
-</html>
+        <form hx-post="/console/init"
+              hx-target="#message-container"
+              hx-swap="innerHTML"
+              hx-disabled-elt="button"
+              hx-indicator=".spinner">
+            <input type="hidden" name="__anti-forgery-token" value="{{csrf-token}}">
+
+            {% with id="tenant-name" name="tenant-name" label="Organization Name" placeholder="My Organization" hint="Your company or personal workspace name" autofocus=true required=true %}
+              {% include "templates/console/components/form-field.html" %}
+            {% endwith %}
+
+            {% with id="username" name="username" type="email" label="console Email" placeholder="console@example.com" autocomplete="username" required=true %}
+              {% include "templates/console/components/form-field.html" %}
+            {% endwith %}
+
+            {% with id="password" name="password" type="password" label="Password" placeholder="••••••••" autocomplete="new-password" minlength="8" hint="At least 8 characters, use a strong password" required=true %}
+              {% include "templates/console/components/form-field.html" %}
+            {% endwith %}
+
+            <button type="submit" class="btn-primary">
+                <span class="spinner"></span>
+                {{ lucide_icon("rocket", "icon-md") }}
+                <span>Create Account</span>
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

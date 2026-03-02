@@ -1,19 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="noindex, nofollow">
-    <meta name="csrf-token" content="{{csrf-token}}">
-    <title>Console Dashboard - Mdbrain</title>
-    <link rel="icon" type="image/png" href='{{ "/publics/shared/images/favicon.png"|asset_url }}'>
-    <link href='{{ "/publics/console/css/console.css"|asset_url }}' rel="stylesheet">
-    <script src='{{ "/publics/shared/htmx.min.js"|asset_url }}'></script>
-    <script src='{{ "/publics/console/js/console.js"|asset_url }}'></script>
-</head>
-<body hx-headers='{"X-CSRF-Token":"{{csrf-token}}"}'>
-    <div id="notification-container" class="fixed top-4 right-4 z-[9999]"></div>
+{% extends "templates/console/base.html" %}
 
+{% block title %}Console Dashboard - Mdbrain{% endblock %}
+{% block page_id %}vaults{% endblock %}
+
+{% block content %}
     {% with tenant=tenant %}
       {% include "templates/console/components/header.html" %}
     {% endwith %}
@@ -195,5 +185,4 @@
             </form>
         </div>
     </dialog>
-</body>
-</html>
+{% endblock %}

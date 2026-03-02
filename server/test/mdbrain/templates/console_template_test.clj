@@ -10,12 +10,12 @@
       (is (some? resource))
       (is (str/includes? html "<meta name=\"robots\" content=\"noindex, nofollow\">")))))
 
-(deftest test-console-page-templates-noindex
-  (testing "All full-page console templates include noindex meta tag"
+(deftest test-console-page-templates-extend-base
+  (testing "All full-page console templates extend console base template"
     (doseq [template ["templates/console/login.html"
                       "templates/console/init.html"
                       "templates/console/vaults.html"]]
       (let [resource (io/resource template)
             html (slurp resource)]
         (is (some? resource))
-        (is (str/includes? html "<meta name=\"robots\" content=\"noindex, nofollow\">"))))))
+        (is (str/includes? html "{% extends \"templates/console/base.html\" %}"))))))

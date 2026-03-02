@@ -23,13 +23,17 @@
   []
   (if-let [resource (io/resource manifest-resource-path)]
     (try
-      (-> (slurp resource)
-          (json/read-str :key-fn identity)
-          normalize-manifest)
+      (let [manifest (-> (slurp resource)
+                         (json/read-str :key-fn identity)
+                         normalize-manifest)]
+        (log/info "Loaded asset manifest entries:" (count manifest))
+        manifest)
       (catch Exception e
         (log/warn e "Failed to load asset manifest, falling back to original asset paths")
         {}))
-    {}))
+    (do
+      (log/info "Asset manifest not found; using original asset paths")
+      {})))
 
 (defonce manifest-cache (atom (delay (load-manifest))))
 

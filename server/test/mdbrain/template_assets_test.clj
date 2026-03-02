@@ -1,5 +1,6 @@
 (ns mdbrain.template-assets-test
   (:require
+   [clojure.java.io :as io]
    [clojure.test :refer [deftest is testing]]
    [mdbrain.template-assets :as template-assets]))
 
@@ -48,3 +49,9 @@
                                                      {"/publics/app/css/app.css" "/publics/app/css/app.cachedhash.css"})]
       (is (= "/publics/app/css/app.cachedhash.css"
              (template-assets/asset-url "/publics/app/css/app.css"))))))
+
+(deftest test-load-manifest-missing-resource
+  (testing "Missing manifest resource falls back to empty map"
+    (with-redefs [io/resource (fn [_] nil)]
+      (is (= {}
+             (template-assets/load-manifest))))))

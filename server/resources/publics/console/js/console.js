@@ -159,6 +159,21 @@ function getHtmxJsonResponse(event) {
   return safeParseJson(xhr.responseText || xhr.response || '') || null;
 }
 
+function renderAuthMessage(target, type, message) {
+  if (!target) return;
+
+  const isSuccess = type === 'success';
+  const icon = isSuccess ? 'check-circle' : 'alert-circle';
+  const cls = isSuccess ? 'alert-success' : 'alert-error';
+
+  target.innerHTML = `
+    <div class="alert ${cls}">
+      ${lucideIconSvg(icon, 'icon-sm')}
+      <span>${escapeHtmlAttr(message)}</span>
+    </div>
+  `;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Mdbrain console initialized');
   renderLocalDatetimes(document);
@@ -167,6 +182,39 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('htmx:afterSwap', (event) => {
   const target = (event.detail && event.detail.target) || event.target || document;
   renderLocalDatetimes(target);
+});
+
+document.addEventListener('htmx:afterRequest', (event) => {
+  const requestPath = event?.detail?.pathInfo?.requestPath;
+  if (requestPath !== '/console/login' && requestPath !== '/console/init') return;
+
+  const target = event?.detail?.target;
+
+  if (!event.detail.successful) {
+    renderAuthMessage(target, 'error', 'Network error, please try again');
+    return;
+  }
+
+  const response = getHtmxJsonResponse(event);
+  if (!response) {
+    renderAuthMessage(target, 'error', 'Server response error');
+    return;
+  }
+
+  if (response.success) {
+    if (requestPath === '/console/login') {
+      renderAuthMessage(target, 'success', 'Login successful, redirecting...');
+      setTimeout(() => { window.location.href = '/console'; }, 800);
+      return;
+    }
+
+    renderAuthMessage(target, 'success', 'Account created successfully, redirecting...');
+    setTimeout(() => { window.location.href = '/console/login'; }, 1200);
+    return;
+  }
+
+  const fallbackMessage = requestPath === '/console/login' ? 'Login failed' : 'Creation failed';
+  renderAuthMessage(target, 'error', response.error || fallbackMessage);
 });
 
 /**
@@ -308,9 +356,9 @@ window.formatDate = formatDate;
 window.openCreateModal = openCreateModal;
 window.closeCreateModal = closeCreateModal;
 window.openEditModal = openEditModal;
-	window.closeEditModal = closeEditModal;
-	window.openChangePasswordModal = openChangePasswordModal;
-	window.closeChangePasswordModal = closeChangePasswordModal;
+window.closeEditModal = closeEditModal;
+window.openChangePasswordModal = openChangePasswordModal;
+window.closeChangePasswordModal = closeChangePasswordModal;
 
 document.addEventListener('htmx:afterRequest', function(event) {
   if (event.detail.pathInfo.requestPath !== '/console/user/password') return;

@@ -6,15 +6,9 @@
    [mdbrain.handlers.console.common :as common]
    [mdbrain.object-store :as object-store]
    [mdbrain.response :as resp]
-   [mdbrain.template-assets :as template-assets]
    [mdbrain.utils :as utils]
    [mdbrain.utils.bytes :as utils.bytes]
-   [selmer.parser :as selmer]))
-
-(defn- render-template
-  [template context]
-  (template-assets/register-filter!)
-  (selmer/render-file template context))
+   [mdbrain.view.render :as render]))
 
 (defn- enrich-vault-data
   "Add computed fields to vault for display."
@@ -22,8 +16,8 @@
   (let [sync-key (:sync-key vault)
         masked (str (subs sync-key 0 8) "******" (subs sync-key (- (count sync-key) 8)))
         publish-status (or (:last-publish-status vault) "never")
-        notes (db/search-notes-by-vault (:id vault) "")
-        storage-bytes (db/get-vault-storage-size (:id vault))
+        notes (or (:notes vault) [])
+        storage-bytes (or (:storage-bytes vault) 0)
         logo-url (when-let [key (:logo-object-key vault)]
                    (common/console-asset-url (:id vault) key))]
     (assoc vault
@@ -36,26 +30,29 @@
            :storage-size (utils.bytes/format-storage-size storage-bytes)
            :logo-url logo-url)))
 
+(defn- load-vaults-with-display-data
+  [tenant-id]
+  (->> (db/list-vaults-dashboard-data tenant-id)
+       (mapv enrich-vault-data)))
+
 (defn console-home
   "Console home page showing all vaults."
   [request]
   (let [tenant-id (get-in request [:session :tenant-id])
         tenant (db/get-tenant tenant-id)
-        vaults (db/list-vaults-by-tenant tenant-id)
-        vaults-with-data (mapv enrich-vault-data vaults)]
-    (resp/html (render-template "templates/console/vaults.html"
-                                {:tenant tenant
-                                 :vaults vaults-with-data
-                                 :csrf-token (:anti-forgery-token request)}))))
+        vaults-with-data (load-vaults-with-display-data tenant-id)]
+    (render/page "templates/console/vaults.html"
+                 {:tenant tenant
+                  :vaults vaults-with-data
+                  :csrf-token (:anti-forgery-token request)})))
 
 (defn list-vaults
   "List all vaults for current tenant."
   [request]
   (let [tenant-id (get-in request [:session :tenant-id])
-        vaults (db/list-vaults-by-tenant tenant-id)
-        vaults-with-data (mapv enrich-vault-data vaults)]
-    (resp/html (render-template "templates/console/vault-list.html"
-                                {:vaults vaults-with-data}))))
+        vaults-with-data (load-vaults-with-display-data tenant-id)]
+    (render/page "templates/console/vault-list.html"
+                 {:vaults vaults-with-data})))
 
 (defn create-vault
   "Create a new vault."
@@ -235,12 +232,10 @@
       :else
       (let [notes (db/search-notes-by-vault vault-id "")
             root-note-id (:root-note-id vault)]
-        {:status 200
-         :headers {"Content-Type" "text/html"}
-         :body (render-template "templates/console/root-note-selector.html"
-                                {:notes notes
-                                 :vault-id vault-id
-                                 :root-note-id root-note-id})}))))
+        (render/page "templates/console/root-note-selector.html"
+                     {:notes notes
+                      :vault-id vault-id
+                      :root-note-id root-note-id})))))
 
 (defn renew-vault-sync-key
   "Generate a new publish key for a vault."

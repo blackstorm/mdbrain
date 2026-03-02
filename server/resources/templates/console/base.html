@@ -17,7 +17,11 @@
     {# console JS #}
     <script src='{{ "/publics/console/js/console.js"|asset_url }}'></script>
 </head>
-<body class="antialiased bg-[#fafafa] min-h-screen" hx-headers='{"X-CSRF-Token":"{{csrf-token}}"}'>
+<body
+    class="{% block body_class %}antialiased bg-[#fafafa] min-h-screen{% endblock %}"
+    data-page="{% block page_id %}{% endblock %}"
+    hx-headers='{"X-CSRF-Token":"{{csrf-token}}"}'
+>
     <script>
       // Handle HTMX errors gracefully
       document.body.addEventListener('htmx:responseError', (event) => {
@@ -28,7 +32,7 @@
     </script>
 
     <!-- Notification container -->
-    <div id="notification-container" class="fixed top-4 right-4 z-50"></div>
+    <div id="notification-container" class="fixed top-4 right-4 z-[9999]"></div>
 
     {% block content %}{% endblock %}
 </body>

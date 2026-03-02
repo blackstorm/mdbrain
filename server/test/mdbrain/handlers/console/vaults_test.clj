@@ -40,6 +40,39 @@
       (is (string? (:body response)))
       (is (str/includes? (:body response) "No sites yet")))))
 
+(deftest test-list-vaults-uses-dashboard-data-batch-query
+  (testing "List vaults uses batch dashboard data and avoids per-vault queries"
+    (let [tenant-id (utils/generate-uuid)
+          _ (db/create-tenant! tenant-id "Test Org")
+          user-id (utils/generate-uuid)
+          _ (db/create-user! user-id tenant-id "batch-query-console" "hash")
+          request (authenticated-request :get "/api/console/vaults" tenant-id user-id)
+          dashboard-calls (atom 0)
+          legacy-note-search-calls (atom 0)
+          legacy-storage-calls (atom 0)]
+      (with-redefs [db/list-vaults-dashboard-data (fn [_]
+                                                    (swap! dashboard-calls inc)
+                                                    [{:id (utils/generate-uuid)
+                                                      :name "Batch Blog"
+                                                      :domain "batch.com"
+                                                      :sync-key "12345678-1234-1234-1234-123456789012"
+                                                      :last-publish-status "never"
+                                                      :notes []
+                                                      :storage-bytes 0}])
+                    db/search-notes-by-vault (fn [& _]
+                                               (swap! legacy-note-search-calls inc)
+                                               [])
+                    db/get-vault-storage-size (fn [& _]
+                                                (swap! legacy-storage-calls inc)
+                                                0)]
+        (let [response (vaults/list-vaults request)]
+          (is (= 200 (:status response)))
+          (is (string? (:body response)))
+          (is (str/includes? (:body response) "Batch Blog"))
+          (is (= 1 @dashboard-calls))
+          (is (= 0 @legacy-note-search-calls))
+          (is (= 0 @legacy-storage-calls)))))))
+
 (deftest test-create-vault-success
   (testing "Create vault successfully"
     (let [tenant-id (utils/generate-uuid)

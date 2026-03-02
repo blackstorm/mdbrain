@@ -2,7 +2,7 @@
   (:require
    [mdbrain.utils.auth :as auth]
    [mdbrain.utils.crypto :as crypto]
-   [mdbrain.utils.htmx :as htmx]
+   [mdbrain.view.htmx :as view.htmx]
    [mdbrain.utils.id :as id]
    [mdbrain.utils.paths :as paths]))
 
@@ -17,4 +17,4 @@
 (def verify-password auth/verify-password)
 (def parse-auth-header auth/parse-auth-header)
 
-(def is-htmx? htmx/is-htmx?)
+(def is-htmx? view.htmx/is-htmx-request?)

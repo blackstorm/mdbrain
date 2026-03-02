@@ -526,3 +526,67 @@
           response (app/serve-favicon request)]
 
       (is (= 403 (:status response))))))
+
+;; ============================================================
+;; HTMX Response Contract Tests
+;; ============================================================
+
+(deftest test-get-note-htmx-response-contract
+  (testing "HTMX request returns note fragment with HX-Push-Url"
+    (let [tenant-id (utils/generate-uuid)
+          _ (db/create-tenant! tenant-id "HTMX Org")
+          vault-id (utils/generate-uuid)
+          domain "htmx-test.com"
+          _ (db/create-vault! vault-id tenant-id "HTMX Vault" domain (utils/generate-uuid))
+          note-a "note-a"
+          note-b "note-b"
+          _ (db/upsert-note! (utils/generate-uuid) tenant-id vault-id "a.md" note-a
+                             "# Note A" nil "hash-a" "2024-01-01T00:00:00Z")
+          _ (db/upsert-note! (utils/generate-uuid) tenant-id vault-id "b.md" note-b
+                             "# Note B" nil "hash-b" "2024-01-01T00:00:00Z")
+          request (-> (mock/request :get (str "/" note-b))
+                      (assoc :headers {"host" domain
+                                       "hx-request" "true"
+                                       "x-from-note-id" note-a
+                                       "hx-current-url" (str "http://" domain "/" note-a)})
+                      (assoc :path-params {:path note-b}))
+          response (app/get-note request)]
+      (is (= 200 (:status response)))
+      (is (= "/note-a+note-b" (get-in response [:headers "HX-Push-Url"])))
+      (is (str/includes? (get-in response [:headers "Content-Type"]) "text/html"))
+      (is (str/includes? (:body response) note-b))))
+
+  (testing "Non-HTMX request returns full page without HX headers"
+    (let [tenant-id (utils/generate-uuid)
+          _ (db/create-tenant! tenant-id "Page Org")
+          vault-id (utils/generate-uuid)
+          domain "page-test.com"
+          _ (db/create-vault! vault-id tenant-id "Page Vault" domain (utils/generate-uuid))
+          note-a "note-a"
+          _ (db/upsert-note! (utils/generate-uuid) tenant-id vault-id "a.md" note-a
+                             "# Note A" nil "hash-a2" "2024-01-01T00:00:00Z")
+          request (-> (mock/request :get (str "/" note-a))
+                      (assoc :headers {"host" domain})
+                      (assoc :path-params {:path note-a}))
+          response (app/get-note request)]
+      (is (= 200 (:status response)))
+      (is (nil? (get-in response [:headers "HX-Push-Url"])))
+      (is (str/includes? (get-in response [:headers "Content-Type"]) "text/html"))
+      (is (str/includes? (:body response) note-a))))
+
+  (testing "Invalid stacked path returns corrected HX-Replace-Url on full page response"
+    (let [tenant-id (utils/generate-uuid)
+          _ (db/create-tenant! tenant-id "Correction Org")
+          vault-id (utils/generate-uuid)
+          domain "correction-test.com"
+          _ (db/create-vault! vault-id tenant-id "Correction Vault" domain (utils/generate-uuid))
+          note-a "note-a"
+          _ (db/upsert-note! (utils/generate-uuid) tenant-id vault-id "a.md" note-a
+                             "# Note A" nil "hash-a3" "2024-01-01T00:00:00Z")
+          request (-> (mock/request :get "/note-a+missing")
+                      (assoc :headers {"host" domain})
+                      (assoc :path-params {:path "note-a+missing"}))
+          response (app/get-note request)]
+      (is (= 200 (:status response)))
+      (is (= "/note-a" (get-in response [:headers "HX-Replace-Url"])))
+      (is (str/includes? (:body response) note-a)))))
