@@ -1,5 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
+const appPort = process.env.E2E_APP_PORT || '18080';
+
 const auth = {
   tenant: 'E2E Organization',
   username: 'e2e-admin@example.com',
@@ -8,6 +10,14 @@ const auth = {
 
 function uniqueId() {
   return `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+}
+
+function appUrl(domain, path = '/') {
+  return `http://${domain}:${appPort}${path}`;
+}
+
+function appServerUrl(path = '/') {
+  return `http://127.0.0.1:${appPort}${path}`;
 }
 
 async function ensureInitialized(page) {
@@ -35,10 +45,10 @@ function vaultCard(page, siteName) {
   return page.locator('.vault-card', { hasText: siteName });
 }
 
-async function createSite(page, label) {
+async function createSite(page, label, domain = null) {
   const id = uniqueId();
   const siteName = `${label} ${id}`;
-  const siteDomain = `e2e-${id}.example.com`;
+  const siteDomain = domain || `e2e-${id}.example.com`;
 
   await page.getByRole('button', { name: 'New Site' }).click();
   await page.locator('#create-name').fill(siteName);
@@ -56,6 +66,26 @@ async function getSyncKey(page, siteName) {
   const card = vaultCard(page, siteName);
   await expect(card).toBeVisible();
   return card.locator('.sync-key-value').getAttribute('data-key');
+}
+
+async function syncNote(request, syncKey, noteId, notePath, content) {
+  const syncResponse = await request.post(`/obsidian/sync/notes/${noteId}`, {
+    headers: {
+      Authorization: `Bearer ${syncKey}`
+    },
+    data: {
+      path: notePath,
+      content,
+      hash: `hash-${uniqueId()}`,
+      assets: [],
+      linked_notes: []
+    }
+  });
+
+  expect(syncResponse.ok()).toBeTruthy();
+  const syncBody = await syncResponse.json();
+  expect(['stored', 'skipped']).toContain(syncBody.status);
+  return syncBody;
 }
 
 async function deleteSite(page, siteName) {
@@ -223,6 +253,78 @@ test.describe.serial('console auth and management flows', () => {
     await deleteSite(page, siteName);
   });
 
+  test('renders app home and stacked note paths', async ({ page, request }) => {
+    const appDomain = `app-${uniqueId()}.localhost`;
+    const noteAId = `note-a-${uniqueId()}`;
+    const noteBId = `note-b-${uniqueId()}`;
+    const noteAPath = `Alpha-${uniqueId()}.md`;
+    const noteBPath = `Beta-${uniqueId()}.md`;
+
+    await ensureInitialized(page);
+    await login(page);
+
+    const { siteName } = await createSite(page, 'App Navigation Site', appDomain);
+    const syncKey = await getSyncKey(page, siteName);
+
+    await syncNote(request, syncKey, noteAId, noteAPath, '# Alpha Note\n\nAlpha body');
+    await syncNote(request, syncKey, noteBId, noteBPath, '# Beta Note\n\nBeta body');
+
+    await page.goto(appUrl(appDomain, '/'));
+    await expect(page.getByRole('heading', { name: siteName })).toBeVisible();
+    await expect(page.getByRole('link', { name: new RegExp(noteAPath) })).toBeVisible();
+    await expect(page.getByRole('link', { name: new RegExp(noteBPath) })).toBeVisible();
+
+    await page.goto(appUrl(appDomain, `/${noteAId}+${noteBId}`));
+    await expect(page.locator(`#note-${noteAId}`)).toContainText('Alpha body');
+    await expect(page.locator(`#note-${noteBId}`)).toContainText('Beta body');
+
+    await page.goto('/console');
+    await deleteSite(page, siteName);
+  });
+
+  test('returns htmx push and replace headers on app requests', async ({ page, request }) => {
+    const appDomain = `app-hx-${uniqueId()}.localhost`;
+    const noteAId = `note-a-${uniqueId()}`;
+    const noteBId = `note-b-${uniqueId()}`;
+
+    await ensureInitialized(page);
+    await login(page);
+
+    const { siteName } = await createSite(page, 'App HTMX Header Site', appDomain);
+    const syncKey = await getSyncKey(page, siteName);
+
+    await syncNote(request, syncKey, noteAId, `A-${uniqueId()}.md`, '# A');
+    await syncNote(request, syncKey, noteBId, `B-${uniqueId()}.md`, '# B');
+
+    const hostHeader = `${appDomain}:${appPort}`;
+
+    const htmxResponse = await request.get(appServerUrl(`/${noteBId}`), {
+      headers: {
+        host: hostHeader,
+        'hx-request': 'true',
+        'x-from-note-id': noteAId,
+        'hx-current-url': appUrl(appDomain, `/${noteAId}`)
+      }
+    });
+
+    expect(htmxResponse.ok()).toBeTruthy();
+    const htmxHeaders = htmxResponse.headers();
+    expect(htmxHeaders['hx-push-url']).toBe(`/${noteAId}+${noteBId}`);
+    expect(htmxHeaders['content-type']).toContain('text/html');
+
+    const correctedResponse = await request.get(appServerUrl(`/${noteAId}+missing-note`), {
+      headers: {
+        host: hostHeader
+      }
+    });
+    expect(correctedResponse.ok()).toBeTruthy();
+    const correctedHeaders = correctedResponse.headers();
+    expect(correctedHeaders['hx-replace-url']).toBe(`/${noteAId}`);
+
+    await page.goto('/console');
+    await deleteSite(page, siteName);
+  });
+
   test('sets root note after syncing a note', async ({ page, request }) => {
     const noteId = `note-${uniqueId()}`;
     const notePath = `Home-${uniqueId()}.md`;
@@ -233,22 +335,7 @@ test.describe.serial('console auth and management flows', () => {
     const { siteName } = await createSite(page, 'Root Note Site');
     const syncKey = await getSyncKey(page, siteName);
 
-    const syncResponse = await request.post(`/obsidian/sync/notes/${noteId}`, {
-      headers: {
-        Authorization: `Bearer ${syncKey}`
-      },
-      data: {
-        path: notePath,
-        content: '# Home',
-        hash: `hash-${uniqueId()}`,
-        assets: [],
-        linked_notes: []
-      }
-    });
-
-    expect(syncResponse.ok()).toBeTruthy();
-    const syncBody = await syncResponse.json();
-    expect(['stored', 'skipped']).toContain(syncBody.status);
+    await syncNote(request, syncKey, noteId, notePath, '# Home');
 
     await page.goto('/console');
 
