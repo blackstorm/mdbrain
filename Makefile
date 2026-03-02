@@ -1,10 +1,9 @@
 .PHONY: \
 	help \
 	install backend-install assets-install plugin-install \
-	e2e-install \
 	dev backend-dev backend-repl assets-dev plugin-dev \
 	build backend-build assets-build plugin-build plugin-package \
-	test backend-test plugin-test e2e-test \
+	test backend-test plugin-test \
 	db-migrate db-pending db-create-migration db-reset \
 	clean
 
@@ -20,7 +19,7 @@ help:
 	@echo "Build:"
 	@echo "  make build                         Build backend + CSS + plugin"
 	@echo "  make backend-build                 Build backend uberjar"
-	@echo "  make assets-build                  Build Tailwind CSS + template assets"
+	@echo "  make assets-build                  Build Tailwind CSS (console + app)"
 	@echo "  make plugin-build                  Build Obsidian plugin to dist/"
 	@echo "  make plugin-package                Package plugin zip (mdbrain-plugin.zip)"
 	@echo ""
@@ -28,8 +27,6 @@ help:
 	@echo "  make test                          Run backend + plugin tests"
 	@echo "  make backend-test                  Run backend tests (clojure -M:test)"
 	@echo "  make plugin-test                   Run plugin tests (pnpm test)"
-	@echo "  make e2e-test                      Run Playwright E2E tests"
-	@echo "  make e2e-install                   Install Playwright Chromium browser"
 	@echo ""
 	@echo "Database:"
 	@echo "  make db-migrate                    Run migrations (migratus)"
@@ -58,10 +55,6 @@ assets-install:
 plugin-install:
 	@echo "Installing plugin dependencies..."
 	@cd obsidian-plugin && pnpm install --frozen-lockfile
-
-e2e-install:
-	@echo "Installing Playwright Chromium browser..."
-	@cd server && npm run test:e2e:install
 
 APP_PORT ?= 8080
 CONSOLE_PORT ?= 9090
@@ -108,7 +101,7 @@ backend-build:
 assets-build:
 	@echo "Building Tailwind CSS..."
 	@cd server && npm run build
-	@echo "CSS and template assets built:"
+	@echo "CSS built:"
 	@echo "  - server/resources/publics/console/css/console.css"
 	@echo "  - server/resources/publics/app/css/app.css"
 
@@ -131,10 +124,6 @@ backend-test:
 plugin-test:
 	@echo "Running plugin tests..."
 	@cd obsidian-plugin && pnpm test
-
-e2e-test:
-	@echo "Running Playwright E2E tests..."
-	@cd server && npm run test:e2e
 
 # Database
 db-migrate:
