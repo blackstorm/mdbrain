@@ -20,7 +20,7 @@ help:
 	@echo "Build:"
 	@echo "  make build                         Build backend + CSS + plugin"
 	@echo "  make backend-build                 Build backend uberjar"
-	@echo "  make assets-build                  Build Tailwind CSS (console + app)"
+	@echo "  make assets-build                  Build Tailwind CSS + template assets"
 	@echo "  make plugin-build                  Build Obsidian plugin to dist/"
 	@echo "  make plugin-package                Package plugin zip (mdbrain-plugin.zip)"
 	@echo ""
@@ -108,7 +108,7 @@ backend-build:
 assets-build:
 	@echo "Building Tailwind CSS..."
 	@cd server && npm run build
-	@echo "CSS built:"
+	@echo "CSS and template assets built:"
 	@echo "  - server/resources/publics/console/css/console.css"
 	@echo "  - server/resources/publics/app/css/app.css"
 
