@@ -7,6 +7,7 @@
 - [测试结构](#toc-structure)
 - [运行后端测试](#toc-backend-tests)
 - [运行指定测试](#toc-specific-tests)
+- [运行 Playwright E2E 测试](#toc-playwright-tests)
 - [运行 App 脚本测试（手动）](#toc-app-tests)
 
 <a id="toc-structure"></a>
@@ -14,8 +15,9 @@
 
 ```
 server/test/
-├── mdbrain/                 # 后端测试（Clojure）
-└── app/test.html                  # App 脚本测试（手动）
+├── mdbrain/                # 后端测试（Clojure）
+├── e2e/                    # Playwright E2E 测试
+└── app/test.html           # App 脚本测试（手动）
 ```
 
 <a id="toc-backend-tests"></a>
@@ -42,6 +44,28 @@ cd server
 
 clojure -X:test :patterns '["mdbrain.db-test"]'
 clojure -X:test :patterns '["mdbrain.handlers.*"]'
+```
+
+<a id="toc-playwright-tests"></a>
+## 运行 Playwright E2E 测试
+
+首次运行先安装 Chromium 浏览器：
+
+```bash
+make e2e-install
+```
+
+执行 E2E 测试：
+
+```bash
+make e2e-test
+```
+
+或直接运行：
+
+```bash
+cd server
+npm run test:e2e
 ```
 
 <a id="toc-app-tests"></a>

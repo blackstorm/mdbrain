@@ -23,6 +23,9 @@ server/target/
 node_modules/
 server/node_modules/
 obsidian-plugin/node_modules/
+server/playwright-report/
+server/test-results/
+server/.playwright-browsers/
 
 # Build artifacts
 target/
