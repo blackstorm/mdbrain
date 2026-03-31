@@ -8,7 +8,7 @@
 
 支持多 Vault 发布、自动增量发布、链接解析、反向链接展示等功能，旨在为数字花园、博客、文档和教程站点提供无缝发布体验。
 
-采用 `Clojure` 和 `HTMX` 构建，架构简洁、高效且易于维护。
+采用 `Go`、`Echo`、`Ent` 和 `HTMX` 构建，架构简洁、高效且易于维护。
 
 ## 为什么选择 Mdbrain
 
@@ -106,7 +106,7 @@ Mdbrain 通过环境变量读取配置。
 
 ## 开发
 
-依赖：Java 25（Temurin）、Clojure CLI、Node.js 25、pnpm、Make。
+依赖：Go 1.25、Node.js 25、pnpm、Make。
 
 ```bash
 make install
@@ -133,7 +133,7 @@ make dev
 
 ## 许可证
 
-- 服务端（`server/`）：AGPL-3.0-or-later
+- 服务端（`server/`、`server-go/`）：AGPL-3.0-or-later
 - Obsidian 插件（`obsidian-plugin/`）：MIT
 - 部署配置（`selfhosted/`）：MIT
 

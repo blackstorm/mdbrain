@@ -9,9 +9,8 @@ services:
     environment:
       - STORAGE_TYPE=local
       - DATA_PATH=${DATA_PATH:-/app/data}
-      - MDBRAIN_LOG_LEVEL=${MDBRAIN_LOG_LEVEL:-INFO}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
       - CADDY_ON_DEMAND_TLS_ENABLED=${CADDY_ON_DEMAND_TLS_ENABLED:-false}
-      - JAVA_OPTS=${JAVA_OPTS:-}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "/app/healthcheck.sh"]

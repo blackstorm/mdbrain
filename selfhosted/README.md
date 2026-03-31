@@ -39,6 +39,7 @@ Security model (recommended):
 - If Console is public, restrict access with firewall/ACLs or a private network.
 - The Docker image runs in `ENVIRONMENT=production` by default and Console sessions use `Secure` cookies.
   Accessing Console over plain HTTP can be unreliable; prefer HTTPS for Console.
+- The Docker image runs a Go server binary. On startup it applies pending SQL migrations from `server/resources/migrations` automatically.
 
 <a id="toc-quick-deploy"></a>
 ## Quick deploy (one command)
@@ -111,7 +112,6 @@ For a short overview table, see [../README.md](../README.md#toc-configuration).
 | `S3_BUCKET` | S3 bucket name | `mdbrain` | No |
 | `S3_PUBLIC_URL` | Public base URL for browsers to fetch assets | - | Yes (S3) |
 | `CADDY_ON_DEMAND_TLS_ENABLED` | Enable `/console/domain-check` for Caddy on-demand TLS | `false` | No |
-| `MDBRAIN_LOG_LEVEL` | App log level (Logback) | `INFO` (Docker image) | No |
 
 Notes:
 
@@ -123,9 +123,7 @@ Notes:
 <a id="toc-docker-runtime-vars"></a>
 ### Docker runtime variables
 
-| Name | Description | Default | Required |
-|---|---|---|---|
-| `JAVA_OPTS` | Extra JVM args for the container | empty | No |
+The official image does not require extra runtime-specific variables for a VM. It runs a Go binary directly.
 
 <a id="toc-compose-defaults"></a>
 ### What Compose sets by default
@@ -258,6 +256,7 @@ docker compose --env-file selfhosted/.env -f selfhosted/compose/docker-compose.c
 ```
 
 Database migrations run automatically on server startup.
+After `pull` + `up -d`, the new container starts the Go binary and applies any pending migrations before serving traffic.
 
 <a id="toc-backup"></a>
 ## Backup

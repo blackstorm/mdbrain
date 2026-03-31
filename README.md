@@ -6,9 +6,9 @@
 
 **Mdbrain is a complete self-hosted solution for publishing [Obsidian](https://obsidian.md/) notes as websites.**
 
-It supports multiple vaults, automatic incremental publishing, link parsing, and backlink display—designed to deliver a seamless publishing experience for digital gardens, blogs, documentation, and tutorial sites.
+It supports multiple vaults, automatic incremental publishing, link parsing, and backlink display, designed to deliver a seamless publishing experience for digital gardens, blogs, documentation, and tutorial sites.
 
-Built with `Clojure` and `HTMX` for a simple, fast, and maintainable architecture.
+Built with `Go`, `Echo`, `Ent`, and `HTMX` for a simple, fast, and maintainable architecture.
 
 ## Why Mdbrain
 
@@ -106,7 +106,7 @@ Yes. Each vault can have its own custom domain with automatic HTTPS via Caddy's 
 
 ## Development
 
-Prerequisites: Java 25 (Temurin), Clojure CLI, Node.js 25, pnpm, Make.
+Prerequisites: Go 1.25, Node.js 25, pnpm, Make.
 
 ```bash
 make install
@@ -133,7 +133,7 @@ Contributions are welcome! Please feel free to submit issues and pull requests.
 
 ## License
 
-- Server (`server/`): AGPL-3.0-or-later
+- Server (`server/`, `server-go/`): AGPL-3.0-or-later
 - Obsidian plugin (`obsidian-plugin/`): MIT
 - Deployment configs (`selfhosted/`): MIT
 

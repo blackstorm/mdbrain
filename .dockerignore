@@ -9,6 +9,9 @@ server/.cpcache
 server/node_modules
 server/mdbrain.db
 server/.nrepl-port
+server/test-results
+server-go/target
+server-go/data
 
 obsidian-plugin
 vault

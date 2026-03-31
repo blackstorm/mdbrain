@@ -39,6 +39,7 @@ Mdbrain 在容器内提供两个端口：
 - 若 Console 对外开放，请通过防火墙/ACL 或私有网络限制访问。
 - Docker 镜像默认以 `ENVIRONMENT=production` 运行，Console 会话使用 `Secure` Cookie。
   通过纯 HTTP 访问 Console 可能不可靠；建议为 Console 提供 HTTPS 访问方式。
+- Docker 镜像运行的是 Go 服务端二进制程序，启动时会自动应用 `server/resources/migrations` 中的待执行 SQL 迁移。
 
 <a id="toc-quick-deploy"></a>
 ## 快速部署（一行命令）
@@ -111,7 +112,6 @@ Compose 会从 `selfhosted/.env` 读取环境变量（参考 `selfhosted/.env.ex
 | `S3_BUCKET` | S3 Bucket 名称 | `mdbrain` | 否 |
 | `S3_PUBLIC_URL` | 浏览器加载资源的 base URL | - | 是（S3） |
 | `CADDY_ON_DEMAND_TLS_ENABLED` | 为 Caddy 按需 TLS 启用 `/console/domain-check` | `false` | 否 |
-| `MDBRAIN_LOG_LEVEL` | 应用日志级别（Logback） | `INFO`（Docker 镜像） | 否 |
 
 说明：
 
@@ -123,9 +123,7 @@ Compose 会从 `selfhosted/.env` 读取环境变量（参考 `selfhosted/.env.ex
 <a id="toc-docker-runtime-vars"></a>
 ### Docker 运行时变量
 
-| 变量名 | 说明 | 默认值 | 必填 |
-|---|---|---|---|
-| `JAVA_OPTS` | 容器的 JVM 参数 | 空 | 否 |
+官方镜像不需要额外的 VM 运行时变量；容器会直接运行 Go 二进制程序。
 
 <a id="toc-compose-defaults"></a>
 ### Compose 默认会设置的变量
@@ -258,6 +256,7 @@ docker compose --env-file selfhosted/.env -f selfhosted/compose/docker-compose.c
 ```
 
 数据库迁移会在服务启动时自动执行。
+执行 `pull` + `up -d` 后，新容器会先启动 Go 二进制并应用待执行迁移，再开始对外提供服务。
 
 <a id="toc-backup"></a>
 ## 备份
