@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"mdbrain.dev/internal/app"
@@ -59,12 +58,17 @@ func run(ctx context.Context, args []string) error {
 		if len(args) < 2 || strings.TrimSpace(args[1]) == "" {
 			return errors.New("usage: mdbrain-migrate create NAME")
 		}
-		upPath, downPath, err := dbinfra.CreateMigrationFiles(cfg.MigrationDir, args[1])
+		files, err := dbinfra.CreateMigration(ctx, cfg, args[1])
 		if err != nil {
 			return err
 		}
-		fmt.Println(filepath.Base(upPath))
-		fmt.Println(filepath.Base(downPath))
+		if len(files) == 0 {
+			fmt.Println("No schema changes.")
+			return nil
+		}
+		for _, name := range files {
+			fmt.Println(name)
+		}
 		return nil
 	default:
 		return fmt.Errorf("unknown command %q", args[0])

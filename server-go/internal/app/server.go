@@ -43,9 +43,6 @@ func Build(ctx context.Context, projectRoot string) (*ServerSet, error) {
 			_ = dbinfra.Close(db)
 		}
 	}()
-	if err := dbinfra.RunMigrations(ctx, db, cfg.MigrationDir); err != nil {
-		return nil, err
-	}
 	repo := repository.New(db)
 	objectStore, err := storage.NewObjectStore(cfg)
 	if err != nil {

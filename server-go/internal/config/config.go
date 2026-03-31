@@ -41,7 +41,6 @@ type Config struct {
 
 	TemplateRoot string
 	PublicRoot   string
-	MigrationSQL string
 	MigrationDir string
 	DatabasePath string
 }
@@ -69,8 +68,7 @@ func Load(ctx context.Context, projectRoot string) (*Config, error) {
 		OnDemandTLSEnabled: os.Getenv("CADDY_ON_DEMAND_TLS_ENABLED") == "true",
 		TemplateRoot:       filepath.Join(projectRoot, "server", "resources"),
 		PublicRoot:         filepath.Join(projectRoot, "server", "resources", "publics"),
-		MigrationSQL:       filepath.Join(projectRoot, "server", "resources", "migrations", "001-initial-schema.up.sql"),
-		MigrationDir:       filepath.Join(projectRoot, "server", "resources", "migrations"),
+		MigrationDir:       filepath.Join(projectRoot, "server-go", "ent", "migrate", "migrations"),
 		DatabasePath:       filepath.Join(dataPath, "mdbrain.db"),
 	}
 

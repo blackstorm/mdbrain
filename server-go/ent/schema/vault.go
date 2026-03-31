@@ -45,10 +45,14 @@ func (Vault) Edges() []ent.Edge {
 			Field("tenant_id").
 			Required().
 			Unique(),
-		edge.To("notes", Note.Type),
-		edge.To("assets", Asset.Type),
-		edge.To("note_links", NoteLink.Type),
-		edge.To("note_asset_refs", NoteAssetRef.Type),
+		edge.To("notes", Note.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("assets", Asset.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("note_links", NoteLink.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("note_asset_refs", NoteAssetRef.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 	}
 }
 

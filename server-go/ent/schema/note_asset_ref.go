@@ -34,6 +34,7 @@ func (NoteAssetRef) Edges() []ent.Edge {
 		edge.From("vault", Vault.Type).
 			Ref("note_asset_refs").
 			Field("vault_id").
+			Annotations(entsql.OnDelete(entsql.Cascade)).
 			Required().
 			Unique(),
 	}

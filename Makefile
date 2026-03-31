@@ -36,7 +36,7 @@ help:
 	@echo "Database:"
 	@echo "  make db-migrate                    Run migrations"
 	@echo "  make db-pending                    List pending migrations"
-	@echo "  make db-create-migration NAME=xxx  Create a new migration file"
+	@echo "  make db-create-migration NAME=xxx  Generate a new versioned migration from ent schema"
 	@echo "  make db-reset                      Delete local DB and rerun migrations"
 	@echo ""
 	@echo "Maintenance:"
@@ -66,6 +66,7 @@ dev:
 	@echo "App Port: $(APP_PORT), Console Port: $(CONSOLE_PORT)"
 	@echo "Data Path: $(BACKEND_DATA_PATH)"
 	@echo "Use Ctrl+C to stop all processes"
+	@cd server-go && DATA_PATH=$(BACKEND_DATA_PATH) go run ./cmd/mdbrain-migrate migrate
 	@set -e; \
 	( cd server-go && DATA_PATH=$(BACKEND_DATA_PATH) APP_PORT=$(APP_PORT) CONSOLE_PORT=$(CONSOLE_PORT) go run ./cmd/mdbrain ) & \
 	BACKEND_PID=$$!; \
@@ -80,6 +81,7 @@ backend-dev:
 	@echo "Starting backend development server..."
 	@echo "App Port: $(APP_PORT), Console Port: $(CONSOLE_PORT)"
 	@echo "Data Path: $(BACKEND_DATA_PATH)"
+	@cd server-go && DATA_PATH=$(BACKEND_DATA_PATH) go run ./cmd/mdbrain-migrate migrate
 	@cd server-go && DATA_PATH=$(BACKEND_DATA_PATH) APP_PORT=$(APP_PORT) CONSOLE_PORT=$(CONSOLE_PORT) go run ./cmd/mdbrain
 
 backend-repl:
@@ -148,7 +150,7 @@ db-pending:
 	@cd server-go && DATA_PATH=$(BACKEND_DATA_PATH) go run ./cmd/mdbrain-migrate pending
 
 db-create-migration:
-	@echo "Creating new migration..."
+	@echo "Generating versioned migration from ent schema..."
 	@test -n "$(NAME)" || (echo "Usage: make db-create-migration NAME=your_migration_name" && exit 1)
 	@cd server-go && DATA_PATH=$(BACKEND_DATA_PATH) go run ./cmd/mdbrain-migrate create "$(NAME)"
 

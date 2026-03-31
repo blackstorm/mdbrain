@@ -8,12 +8,31 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"mdbrain.dev/internal/config"
+	dbinfra "mdbrain.dev/internal/infra/db"
 )
 
 func TestBuildWiresAppAndConsoleRoutes(t *testing.T) {
 	t.Setenv("DATA_PATH", filepath.Join(t.TempDir(), "data"))
 	t.Setenv("APP_PORT", "18080")
 	t.Setenv("CONSOLE_PORT", "19090")
+
+	cfg, err := config.Load(context.Background(), appRepoRoot(t))
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	db, err := dbinfra.OpenSQLite(context.Background(), cfg)
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	if err := dbinfra.RunMigrations(context.Background(), db, cfg.MigrationDir); err != nil {
+		_ = db.Close()
+		t.Fatalf("run migrations: %v", err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("close sqlite after migration: %v", err)
+	}
 
 	servers, err := Build(context.Background(), appRepoRoot(t))
 	if err != nil {

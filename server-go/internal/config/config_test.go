@@ -25,6 +25,10 @@ func TestLoadDefaultsAndSecrets(t *testing.T) {
 	if cfg.SessionSecret == "" || cfg.HealthToken == "" {
 		t.Fatalf("expected generated secrets")
 	}
+	wantMigrationDir := filepath.Join(projectRoot, "server-go", "ent", "migrate", "migrations")
+	if cfg.MigrationDir != wantMigrationDir {
+		t.Fatalf("unexpected migration dir: got %s want %s", cfg.MigrationDir, wantMigrationDir)
+	}
 	if _, err := os.Stat(filepath.Join(cfg.DataPath, ".secrets.edn")); err != nil {
 		t.Fatalf("expected secrets file: %v", err)
 	}

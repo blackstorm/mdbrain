@@ -40,7 +40,7 @@ var (
 				Symbol:     "assets_vaults_assets",
 				Columns:    []*schema.Column{AssetsColumns[11]},
 				RefColumns: []*schema.Column{VaultsColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -102,7 +102,7 @@ var (
 				Symbol:     "notes_vaults_notes",
 				Columns:    []*schema.Column{NotesColumns[11]},
 				RefColumns: []*schema.Column{VaultsColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -146,7 +146,7 @@ var (
 				Symbol:     "note_asset_refs_vaults_note_asset_refs",
 				Columns:    []*schema.Column{NoteAssetRefsColumns[4]},
 				RefColumns: []*schema.Column{VaultsColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -190,7 +190,7 @@ var (
 				Symbol:     "note_links_vaults_note_links",
 				Columns:    []*schema.Column{NoteLinksColumns[9]},
 				RefColumns: []*schema.Column{VaultsColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{

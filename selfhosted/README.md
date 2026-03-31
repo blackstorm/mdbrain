@@ -39,7 +39,8 @@ Security model (recommended):
 - If Console is public, restrict access with firewall/ACLs or a private network.
 - The Docker image runs in `ENVIRONMENT=production` by default and Console sessions use `Secure` cookies.
   Accessing Console over plain HTTP can be unreliable; prefer HTTPS for Console.
-- The Docker image runs a Go server binary. On startup it applies pending SQL migrations from `server/resources/migrations` automatically.
+- The Docker entrypoint runs `./mdbrain-migrate migrate` first, then starts the Go server binary with `./mdbrain`.
+- Pending versioned migrations are loaded from `server-go/ent/migrate/migrations`.
 
 <a id="toc-quick-deploy"></a>
 ## Quick deploy (one command)
