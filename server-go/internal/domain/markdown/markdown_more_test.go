@@ -64,6 +64,13 @@ func TestExtractDescriptionTruncatesLongLine(t *testing.T) {
 	}
 }
 
+func TestExtractDescriptionTruncatesOnRuneBoundary(t *testing.T) {
+	got := New(nil).ExtractDescription("# 标题\n\n你好世界欢迎使用 Mdbrain。", 5)
+	if got != "你好世界欢" {
+		t.Fatalf("unexpected utf-8-safe description: %q", got)
+	}
+}
+
 func TestReplaceObsidianLinksBrokenLink(t *testing.T) {
 	got := New(nil).ReplaceObsidianLinks("[[Missing Note]]", "vault-1", nil)
 	if !strings.Contains(got, `class="internal-link broken"`) {

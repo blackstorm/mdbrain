@@ -180,8 +180,12 @@ func (r *Renderer) ExtractDescription(content string, maxLength int) string {
 		case imageLineRe.MatchString(line):
 			continue
 		default:
-			if len(line) > maxLength {
-				return line[:maxLength]
+			runes := []rune(line)
+			if len(runes) > maxLength {
+				if maxLength <= 0 {
+					return ""
+				}
+				return string(runes[:maxLength])
 			}
 			return line
 		}

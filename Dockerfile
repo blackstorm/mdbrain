@@ -29,6 +29,7 @@ RUN set -eux; \
 
 COPY --from=backend-builder --chown=mdbrain:mdbrain /out/mdbrain ./mdbrain
 COPY --from=backend-builder --chown=mdbrain:mdbrain /out/mdbrain-migrate ./mdbrain-migrate
+COPY --from=backend-builder --chown=mdbrain:mdbrain /app/server-go/ent/migrate/migrations ./server-go/ent/migrate/migrations
 COPY --from=app-builder --chown=mdbrain:mdbrain /app/server/resources ./server/resources
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 COPY docker-healthcheck.sh ./healthcheck.sh
