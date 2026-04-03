@@ -191,6 +191,13 @@ func (h *ConsoleVaultHandler) UpdateVaultRootNote(c *echo.Context) error {
 	if rootNoteID == "" {
 		return c.JSON(http.StatusOK, map[string]any{"success": false, "error": "Missing rootNoteId"})
 	}
+	note, err := h.repo.GetNoteByClientID(c.Request().Context(), vault.ID, rootNoteID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) || note == nil {
+			return c.JSON(http.StatusOK, map[string]any{"success": false, "error": "Root note not found"})
+		}
+		return err
+	}
 	if err := h.repo.UpdateVaultRootNote(c.Request().Context(), vault.ID, &rootNoteID); err != nil {
 		return err
 	}
@@ -212,10 +219,25 @@ func (h *ConsoleVaultHandler) GetRootNoteSelector(c *echo.Context) error {
 	if err != nil {
 		return err
 	}
+	noteItems := noteListData(notes)
+	rootNoteID := stringValue(vault.RootNoteID)
+	selectedNotePath := ""
+	for _, item := range noteItems {
+		noteData, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		noteData["vault_id"] = vault.ID
+		selected := anyString(noteData["client_id"]) == rootNoteID
+		noteData["selected"] = selected
+		if selected {
+			selectedNotePath = anyString(noteData["path"])
+		}
+	}
 	body, err := h.renderer.Render("templates/console/root-note-selector.html", map[string]any{
-		"notes":        noteListData(notes),
-		"vault-id":     vault.ID,
-		"root-note-id": stringValue(vault.RootNoteID),
+		"notes":              noteItems,
+		"vault_id":           vault.ID,
+		"selected_note_path": selectedNotePath,
 	})
 	if err != nil {
 		return err

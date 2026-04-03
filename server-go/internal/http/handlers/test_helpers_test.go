@@ -10,6 +10,7 @@ import (
 	"mdbrain.dev/internal/infra/db"
 	"mdbrain.dev/internal/infra/repository"
 	"mdbrain.dev/internal/infra/storage"
+	"mdbrain.dev/internal/templatex"
 )
 
 func setupTestCore(t *testing.T) (*config.Config, *repository.Repository, *storage.LocalStore) {
@@ -36,6 +37,17 @@ func setupTestCore(t *testing.T) (*config.Config, *repository.Repository, *stora
 		t.Fatalf("new local store: %v", err)
 	}
 	return cfg, repo, objectStore
+}
+
+func setupTestCoreWithRenderer(t *testing.T) (*config.Config, *repository.Repository, *storage.LocalStore, *templatex.Renderer) {
+	t.Helper()
+
+	cfg, repo, objectStore := setupTestCore(t)
+	renderer, err := templatex.New(cfg.TemplateRoot)
+	if err != nil {
+		t.Fatalf("new renderer: %v", err)
+	}
+	return cfg, repo, objectStore, renderer
 }
 
 func handlersRepoRoot() string {

@@ -58,6 +58,33 @@ func TestConsoleInitValidationAndAlreadyInitialized(t *testing.T) {
 	}
 }
 
+func TestConsoleAuthPagesRender(t *testing.T) {
+	cfg, repo, _, renderer := setupTestCoreWithRenderer(t)
+	handler := NewConsoleAuthHandler(repo, renderer, middleware.NewSessionManager(cfg.SessionHashKey(), false))
+
+	req := httptest.NewRequest(http.MethodGet, "/console/login", nil)
+	rec := httptest.NewRecorder()
+	c := echo.New().NewContext(req, rec)
+	c.Set("csrf_token", "csrf-login")
+	if err := handler.LoginPage(c); err != nil {
+		t.Fatalf("login page: %v", err)
+	}
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Login to console dashboard") {
+		t.Fatalf("unexpected login page response: %d %s", rec.Code, rec.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/console/init", nil)
+	rec = httptest.NewRecorder()
+	c = echo.New().NewContext(req, rec)
+	c.Set("csrf_token", "csrf-init")
+	if err := handler.InitPage(c); err != nil {
+		t.Fatalf("init page: %v", err)
+	}
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Welcome to Mdbrain") {
+		t.Fatalf("unexpected init page response: %d %s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestConsoleLoginInvalidCredentials(t *testing.T) {
 	_, repo, _ := setupTestCore(t)
 	handler := NewConsoleAuthHandler(repo, nil, middleware.NewSessionManager([]byte("session-hash-key-for-tests-32bytes"), false))
@@ -224,4 +251,3 @@ func TestChangePasswordErrorPaths(t *testing.T) {
 		}
 	})
 }
-

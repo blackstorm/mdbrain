@@ -55,6 +55,19 @@ func TestUploadAndServeVaultLogo(t *testing.T) {
 		t.Fatalf("unexpected upload status: %d body=%s", rec.Code, rec.Body.String())
 	}
 
+	req = httptest.NewRequest(http.MethodGet, "/console/vaults/"+vaultID+"/logo", nil)
+	rec = httptest.NewRecorder()
+	c = echo.New().NewContext(req, rec)
+	c.Set("session.tenant_id", tenantID)
+	c.SetPath("/console/vaults/:id/logo")
+	c.SetPathValues(echo.PathValues{{Name: "id", Value: vaultID}})
+	if err := handler.ServeVaultLogo(c); err != nil {
+		t.Fatalf("serve logo: %v", err)
+	}
+	if rec.Code != http.StatusOK || rec.Body.Len() == 0 {
+		t.Fatalf("unexpected logo status: %d body=%s", rec.Code, rec.Body.String())
+	}
+
 	req = httptest.NewRequest(http.MethodGet, "/console/vaults/"+vaultID+"/favicon", nil)
 	rec = httptest.NewRecorder()
 	c = echo.New().NewContext(req, rec)

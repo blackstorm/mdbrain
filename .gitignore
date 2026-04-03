@@ -26,6 +26,7 @@ obsidian-plugin/node_modules/
 
 # Build artifacts
 target/
+cover.out
 
 # Shadow-cljs
 .shadow-cljs/

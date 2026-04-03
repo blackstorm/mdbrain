@@ -12,6 +12,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
+
+	"mdbrain.dev/internal/infra/storage"
 )
 
 func TestSyncAuthFailures(t *testing.T) {
@@ -46,6 +48,50 @@ func TestSyncAuthFailures(t *testing.T) {
 	}
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("expected 401 for invalid publish key, got %d body=%s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestVaultInfoReturnsVaultMetadata(t *testing.T) {
+	handler, _, vaultID := setupSyncHandler(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/obsidian/vault/info", nil)
+	req.Header.Set("Authorization", "Bearer sync-key-1")
+	rec := httptest.NewRecorder()
+	c := echo.New().NewContext(req, rec)
+	if err := handler.VaultInfo(c); err != nil {
+		t.Fatalf("vault info: %v", err)
+	}
+	if rec.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d body=%s", rec.Code, rec.Body.String())
+	}
+	payload := readJSONMap(t, rec.Body.Bytes())
+	vault, ok := payload["vault"].(map[string]any)
+	if !ok || vault["id"] != vaultID || vault["domain"] != "sync.example.com" {
+		t.Fatalf("unexpected vault info payload: %#v", payload)
+	}
+}
+
+func TestSyncChangesBadJSONRecordsPublishError(t *testing.T) {
+	handler, repo, vaultID := setupSyncHandler(t)
+
+	req := httptest.NewRequest(http.MethodPost, "/obsidian/sync/changes", strings.NewReader("{"))
+	req.Header.Set("Authorization", "Bearer sync-key-1")
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := echo.New().NewContext(req, rec)
+	if err := handler.SyncChanges(c); err != nil {
+		t.Fatalf("sync changes with invalid json: %v", err)
+	}
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for invalid json, got %d body=%s", rec.Code, rec.Body.String())
+	}
+
+	vault, err := repo.GetVaultByID(context.Background(), vaultID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if vault.LastPublishStatus != "error" || stringValue(vault.LastPublishErrorCode) != "bad_request" || stringValue(vault.LastPublishErrorMessage) != "Invalid JSON body" {
+		t.Fatalf("unexpected publish status after invalid changes sync: %#v", vault)
 	}
 }
 
@@ -96,6 +142,74 @@ func TestSyncNoteValidationAndPublishStatus(t *testing.T) {
 	}
 	if vault.LastPublishStatus != "ok" || vault.LastPublishErrorCode != nil || vault.LastPublishErrorMessage != nil {
 		t.Fatalf("expected publish success to clear error fields, got %#v", vault)
+	}
+}
+
+func TestSyncChangesDeletesMissingNotesAndAssets(t *testing.T) {
+	handler, repo, vaultID := setupSyncHandler(t)
+	ctx := context.Background()
+	tenantID := mustTenantID(t, repo, vaultID)
+	localStore := handler.store.(*storage.LocalStore)
+
+	if err := repo.UpsertNote(ctx, uuid.NewString(), tenantID, vaultID, "a.md", "note-a", strPtr("A"), strPtr("{}"), strPtr("hash-a"), nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.UpsertNote(ctx, uuid.NewString(), tenantID, vaultID, "b.md", "note-b", strPtr("B"), strPtr("{}"), strPtr("hash-b"), nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.InsertNoteLink(ctx, vaultID, "note-a", "note-b", "b.md", "link", "B", "[[B]]"); err != nil {
+		t.Fatal(err)
+	}
+
+	const objectKey = "assets/asset-a.png"
+	if err := localStore.PutObject(vaultID, objectKey, []byte("asset-a"), "image/png"); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.UpsertAsset(ctx, uuid.NewString(), tenantID, vaultID, "asset-a", "img/a.png", objectKey, 7, "image/png", "md5-a"); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.UpdateNoteAssetRefs(ctx, vaultID, "note-a", []string{"asset-a"}); err != nil {
+		t.Fatal(err)
+	}
+
+	body := `{"notes":[{"id":"note-b","hash":"hash-b"}],"assets":[]}`
+	req := httptest.NewRequest(http.MethodPost, "/obsidian/sync/changes", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer sync-key-1")
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := echo.New().NewContext(req, rec)
+	if err := handler.SyncChanges(c); err != nil {
+		t.Fatalf("sync changes delete missing items: %v", err)
+	}
+	if rec.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d body=%s", rec.Code, rec.Body.String())
+	}
+	payload := readJSONMap(t, rec.Body.Bytes())
+	if !strings.Contains(rec.Body.String(), `"id":"note-a"`) || !strings.Contains(rec.Body.String(), `"id":"asset-a"`) {
+		t.Fatalf("expected deleted items in payload, got %#v", payload)
+	}
+
+	_, err := repo.GetNoteByClientID(ctx, vaultID, "note-a")
+	if !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("expected missing note-a after sync changes delete, got %v", err)
+	}
+	_, err = repo.GetAssetByClientID(ctx, vaultID, "asset-a")
+	if !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("expected missing asset-a after sync changes delete, got %v", err)
+	}
+	obj, err := localStore.GetObject(vaultID, objectKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if obj != nil {
+		t.Fatalf("expected asset object deleted from local store")
+	}
+	links, err := repo.GetNoteLinks(ctx, vaultID, "note-a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(links) != 0 {
+		t.Fatalf("expected deleted note links to be removed, got %#v", links)
 	}
 }
 

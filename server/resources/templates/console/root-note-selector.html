@@ -1,9 +1,9 @@
 {% if notes|not-empty %}
-<div class="note-selector" id="note-selector-{{vault-id}}">
-  <div class="note-selector-trigger" onclick="toggleNoteSelector('{{vault-id}}')">
+<div class="note-selector" id="note-selector-{{vault_id}}">
+  <div class="note-selector-trigger" onclick="toggleNoteSelector('{{vault_id}}')">
     <span class="note-selector-value">
-      {% if root-note-id %}
-        {% for note in notes %}{% if note.client-id = root-note-id %}{{note.path}}{% endif %}{% endfor %}
+      {% if selected_note_path %}
+        {{selected_note_path}}
     {% else %}
         Select note
       {% endif %}
@@ -14,19 +14,19 @@
     <input type="text"
            class="note-search-input"
            placeholder="Search notes..."
-           oninput="filterNotes('{{vault-id}}', this.value)">
+           oninput="filterNotes('{{vault_id}}', this.value)">
     <div class="note-list">
       {% for note in notes %}
-      <div class="note-item {% if note.client-id = root-note-id %}selected{% endif %}"
-           data-client-id="{{note.client-id}}"
+      <div class="note-item {% if note.selected %}selected{% endif %}"
+           data-client-id="{{note.client_id}}"
            data-path="{{note.path|lower}}"
            data-display="{{note.path}}"
-           hx-put="/console/vaults/{{vault-id}}/root-note"
-           hx-vals='{"rootNoteId": "{{note.client-id}}"}'
+           hx-put="/console/vaults/{{note.vault_id}}/root-note"
+           hx-vals='{"rootNoteId": "{{note.client_id}}"}'
            hx-swap="none"
-           hx-on::after-request="handleNoteSelect('{{vault-id}}', this, event)">
+           hx-on::after-request="handleNoteSelect('{{note.vault_id}}', this, event)">
         <span class="note-path">{{note.path}}</span>
-        {% if note.client-id = root-note-id %}
+        {% if note.selected %}
         {{ lucide_icon("check", "icon-xs note-check") }}
         {% endif %}
       </div>

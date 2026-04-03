@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"errors"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -13,7 +14,22 @@ import (
 	"github.com/labstack/echo/v5"
 
 	"mdbrain.dev/internal/domain/store"
+	storageinfra "mdbrain.dev/internal/infra/storage"
 )
+
+type failOnNthPutStore struct {
+	*storageinfra.LocalStore
+	failOnPut int
+	putCalls  int
+}
+
+func (s *failOnNthPutStore) PutObject(vaultID, objectKey string, content []byte, contentType string) error {
+	s.putCalls++
+	if s.putCalls == s.failOnPut {
+		return errors.New("forced put failure")
+	}
+	return s.LocalStore.PutObject(vaultID, objectKey, content, contentType)
+}
 
 func TestUploadVaultLogoValidationAndPermissions(t *testing.T) {
 	_, repo, objectStore := setupTestCore(t)
@@ -244,6 +260,64 @@ func TestDeleteVaultLogoScenarios(t *testing.T) {
 	}
 }
 
+func TestUploadVaultLogoRollsBackWhenFaviconStoreFails(t *testing.T) {
+	_, repo, objectStore := setupTestCore(t)
+	flakyStore := &failOnNthPutStore{LocalStore: objectStore, failOnPut: 2}
+	handler := NewConsoleLogoHandler(repo, flakyStore)
+
+	tenantID := uuid.NewString()
+	vaultID := uuid.NewString()
+	if err := repo.CreateTenant(context.Background(), tenantID, "Acme"); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.CreateVault(context.Background(), vaultID, tenantID, "Blog", "blog.example.com", "sync"); err != nil {
+		t.Fatal(err)
+	}
+
+	content := samplePNG(t, 256, 256)
+	req := newLogoUploadRequest(t, http.MethodPost, "/console/vaults/"+vaultID+"/logo", "logo", "logo.png", content, "image/png")
+	rec := httptest.NewRecorder()
+	c := echo.New().NewContext(req, rec)
+	c.Set("session.tenant_id", tenantID)
+	c.SetPath("/console/vaults/:id/logo")
+	c.SetPathValues(echo.PathValues{{Name: "id", Value: vaultID}})
+	if err := handler.UploadVaultLogo(c); err != nil {
+		t.Fatalf("upload logo with failing favicon store: %v", err)
+	}
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("unexpected status: %d body=%s", rec.Code, rec.Body.String())
+	}
+	payload := readJSONMap(t, rec.Body.Bytes())
+	if payload["success"] != false {
+		t.Fatalf("expected success=false, got %#v", payload)
+	}
+
+	logoKey := store.LogoObjectKey(sha256Hex(content, 16), "png")
+	faviconKey := store.FaviconObjectKey(logoKey)
+	obj, err := objectStore.GetObject(vaultID, logoKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if obj != nil {
+		t.Fatalf("expected uploaded logo to be rolled back")
+	}
+	obj, err = objectStore.GetObject(vaultID, faviconKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if obj != nil {
+		t.Fatalf("expected favicon object to be absent after rollback")
+	}
+
+	vault, err := repo.GetVaultByID(context.Background(), vaultID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if vault.LogoObjectKey != nil {
+		t.Fatalf("expected vault logo key to remain unset, got %#v", vault.LogoObjectKey)
+	}
+}
+
 func newLogoUploadRequest(t *testing.T, method, target, fieldName, fileName string, content []byte, contentType string) *http.Request {
 	t.Helper()
 	var body bytes.Buffer
@@ -266,4 +340,3 @@ func newLogoUploadRequest(t *testing.T, method, target, fieldName, fileName stri
 	}
 	return req
 }
-
