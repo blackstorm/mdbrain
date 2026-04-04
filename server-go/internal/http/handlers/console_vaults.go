@@ -35,9 +35,13 @@ func (h *ConsoleVaultHandler) ConsoleHome(c *echo.Context) error {
 	if err != nil {
 		return err
 	}
+	enrichedVaults, err := h.enrichVaults(c, vaults)
+	if err != nil {
+		return err
+	}
 	body, err := h.renderer.Render("templates/console/vaults.html", map[string]any{
 		"tenant":     map[string]any{"id": tenant.ID, "name": tenant.Name},
-		"vaults":     h.enrichVaults(c, vaults),
+		"vaults":     enrichedVaults,
 		"csrf-token": anyString(c.Get("csrf_token")),
 	})
 	if err != nil {
@@ -52,8 +56,12 @@ func (h *ConsoleVaultHandler) ListVaults(c *echo.Context) error {
 	if err != nil {
 		return err
 	}
+	enrichedVaults, err := h.enrichVaults(c, vaults)
+	if err != nil {
+		return err
+	}
 	body, err := h.renderer.Render("templates/console/vault-list.html", map[string]any{
-		"vaults": h.enrichVaults(c, vaults),
+		"vaults": enrichedVaults,
 	})
 	if err != nil {
 		return err
@@ -63,8 +71,8 @@ func (h *ConsoleVaultHandler) ListVaults(c *echo.Context) error {
 
 func (h *ConsoleVaultHandler) CreateVault(c *echo.Context) error {
 	tenantID := strings.TrimSpace(anyString(c.Get("session.tenant_id")))
-	name := strings.TrimSpace(firstNonEmpty(c.FormValue("name"), valueFromJSON(c, "name")))
-	domain := strings.TrimSpace(firstNonEmpty(c.FormValue("domain"), valueFromJSON(c, "domain")))
+	name := strings.TrimSpace(c.FormValue("name"))
+	domain := strings.TrimSpace(c.FormValue("domain"))
 	switch {
 	case name == "" || domain == "":
 		return c.JSON(http.StatusOK, map[string]any{"success": false, "error": "Missing required fields"})
@@ -94,7 +102,7 @@ func (h *ConsoleVaultHandler) CreateVault(c *echo.Context) error {
 }
 
 func (h *ConsoleVaultHandler) DeleteVault(c *echo.Context) error {
-	vault, tenantID, err := h.authorizedVault(c)
+	vault, tenantID, err := authorizedVaultForSession(c, h.repo)
 	if err != nil {
 		return err
 	}
@@ -114,7 +122,7 @@ func (h *ConsoleVaultHandler) DeleteVault(c *echo.Context) error {
 }
 
 func (h *ConsoleVaultHandler) UpdateVault(c *echo.Context) error {
-	vault, tenantID, err := h.authorizedVault(c)
+	vault, tenantID, err := authorizedVaultForSession(c, h.repo)
 	if err != nil {
 		return err
 	}
@@ -125,8 +133,8 @@ func (h *ConsoleVaultHandler) UpdateVault(c *echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]any{"success": false, "error": "Permission denied"})
 	}
 
-	name := strings.TrimSpace(firstNonEmpty(c.FormValue("name"), valueFromJSON(c, "name")))
-	domain := strings.TrimSpace(firstNonEmpty(c.FormValue("domain"), valueFromJSON(c, "domain")))
+	name := strings.TrimSpace(c.FormValue("name"))
+	domain := strings.TrimSpace(c.FormValue("domain"))
 	switch {
 	case name == "":
 		return c.JSON(http.StatusOK, map[string]any{"success": false, "error": "Vault name is required"})
@@ -158,7 +166,7 @@ func (h *ConsoleVaultHandler) UpdateVault(c *echo.Context) error {
 }
 
 func (h *ConsoleVaultHandler) SearchVaultNotes(c *echo.Context) error {
-	vault, tenantID, err := h.authorizedVault(c)
+	vault, tenantID, err := authorizedVaultForSession(c, h.repo)
 	if err != nil {
 		return err
 	}
@@ -177,7 +185,7 @@ func (h *ConsoleVaultHandler) SearchVaultNotes(c *echo.Context) error {
 }
 
 func (h *ConsoleVaultHandler) UpdateVaultRootNote(c *echo.Context) error {
-	vault, tenantID, err := h.authorizedVault(c)
+	vault, tenantID, err := authorizedVaultForSession(c, h.repo)
 	if err != nil {
 		return err
 	}
@@ -187,7 +195,7 @@ func (h *ConsoleVaultHandler) UpdateVaultRootNote(c *echo.Context) error {
 	if vault.TenantID != tenantID {
 		return c.JSON(http.StatusOK, map[string]any{"success": false, "error": "Permission denied"})
 	}
-	rootNoteID := strings.TrimSpace(firstNonEmpty(c.FormValue("rootNoteId"), valueFromJSON(c, "rootNoteId")))
+	rootNoteID := strings.TrimSpace(c.FormValue("rootNoteId"))
 	if rootNoteID == "" {
 		return c.JSON(http.StatusOK, map[string]any{"success": false, "error": "Missing rootNoteId"})
 	}
@@ -205,7 +213,7 @@ func (h *ConsoleVaultHandler) UpdateVaultRootNote(c *echo.Context) error {
 }
 
 func (h *ConsoleVaultHandler) GetRootNoteSelector(c *echo.Context) error {
-	vault, tenantID, err := h.authorizedVault(c)
+	vault, tenantID, err := authorizedVaultForSession(c, h.repo)
 	if err != nil {
 		return err
 	}
@@ -246,7 +254,7 @@ func (h *ConsoleVaultHandler) GetRootNoteSelector(c *echo.Context) error {
 }
 
 func (h *ConsoleVaultHandler) RenewVaultSyncKey(c *echo.Context) error {
-	vault, tenantID, err := h.authorizedVault(c)
+	vault, tenantID, err := authorizedVaultForSession(c, h.repo)
 	if err != nil {
 		return err
 	}
@@ -264,7 +272,7 @@ func (h *ConsoleVaultHandler) RenewVaultSyncKey(c *echo.Context) error {
 }
 
 func (h *ConsoleVaultHandler) UpdateCustomHeadHTML(c *echo.Context) error {
-	vault, tenantID, err := h.authorizedVault(c)
+	vault, tenantID, err := authorizedVaultForSession(c, h.repo)
 	if err != nil {
 		return err
 	}
@@ -274,7 +282,7 @@ func (h *ConsoleVaultHandler) UpdateCustomHeadHTML(c *echo.Context) error {
 	if vault.TenantID != tenantID {
 		return c.JSON(http.StatusOK, map[string]any{"success": false, "error": "Permission denied"})
 	}
-	custom := firstNonEmpty(c.FormValue("customHeadHtml"), valueFromJSON(c, "customHeadHtml"))
+	custom := c.FormValue("customHeadHtml")
 	if len(custom) > 65536 {
 		return c.JSON(http.StatusOK, map[string]any{"success": false, "error": "Custom HTML exceeds maximum size of 64KB"})
 	}
@@ -284,21 +292,17 @@ func (h *ConsoleVaultHandler) UpdateCustomHeadHTML(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]any{"success": true, "message": "Custom HTML updated"})
 }
 
-func (h *ConsoleVaultHandler) authorizedVault(c *echo.Context) (*model.Vault, string, error) {
-	tenantID := strings.TrimSpace(anyString(c.Get("session.tenant_id")))
-	vaultID := strings.TrimSpace(c.Param("id"))
-	vault, err := h.repo.GetVaultByID(c.Request().Context(), vaultID)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, tenantID, nil
-	}
-	return vault, tenantID, err
-}
-
-func (h *ConsoleVaultHandler) enrichVaults(c *echo.Context, vaults []model.Vault) []any {
+func (h *ConsoleVaultHandler) enrichVaults(c *echo.Context, vaults []model.Vault) ([]any, error) {
 	out := make([]any, 0, len(vaults))
 	for _, vault := range vaults {
-		notes, _ := h.repo.SearchNotesByVault(c.Request().Context(), vault.ID, "")
-		storageSize, _ := h.repo.GetVaultStorageSize(c.Request().Context(), vault.ID)
+		notes, err := h.repo.SearchNotesByVault(c.Request().Context(), vault.ID, "")
+		if err != nil {
+			return nil, err
+		}
+		storageSize, err := h.repo.GetVaultStorageSize(c.Request().Context(), vault.ID)
+		if err != nil {
+			return nil, err
+		}
 		publishStatus := vault.LastPublishStatus
 		if publishStatus == "" {
 			publishStatus = "never"
@@ -325,5 +329,5 @@ func (h *ConsoleVaultHandler) enrichVaults(c *echo.Context, vaults []model.Vault
 		}
 		out = append(out, item)
 	}
-	return out
+	return out, nil
 }

@@ -283,10 +283,6 @@ func (r *Repository) GetNoteByClientID(ctx context.Context, vaultID, clientID st
 	return noteModel(entity), nil
 }
 
-func (r *Repository) GetNoteForApp(ctx context.Context, vaultID, clientID string) (*model.Note, error) {
-	return r.GetNoteByClientID(ctx, vaultID, clientID)
-}
-
 func (r *Repository) ListNotesByVault(ctx context.Context, vaultID string) ([]model.Note, error) {
 	entities, err := r.client.Note.Query().
 		Where(note.VaultIDEQ(vaultID), note.DeletedAtIsNil()).

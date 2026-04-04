@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"context"
 	"net/http"
 	"strings"
 
@@ -77,7 +76,7 @@ func ConsoleInitCheckMiddleware(repo *repository.Repository) echo.MiddlewareFunc
 				return next(c)
 			}
 
-			hasUser, err := repo.HasAnyUser(context.Background())
+			hasUser, err := repo.HasAnyUser(c.Request().Context())
 			if err != nil {
 				return err
 			}

@@ -55,9 +55,9 @@ func (h *ConsoleAuthHandler) InitConsole(c *echo.Context) error {
 		return response.Error(c, http.StatusForbidden, "System already initialized")
 	}
 
-	username := strings.TrimSpace(firstNonEmpty(c.FormValue("username"), valueFromJSON(c, "username")))
-	password := firstNonEmpty(c.FormValue("password"), valueFromJSON(c, "password"))
-	tenantName := strings.TrimSpace(firstNonEmpty(c.FormValue("tenant-name"), valueFromJSON(c, "tenant-name"), valueFromJSON(c, "tenantName")))
+	username := strings.TrimSpace(c.FormValue("username"))
+	password := c.FormValue("password")
+	tenantName := strings.TrimSpace(firstNonEmpty(c.FormValue("tenant-name"), c.FormValue("tenantName")))
 	if username == "" || password == "" || tenantName == "" {
 		return c.JSON(http.StatusOK, map[string]any{"success": false, "error": "Missing required fields"})
 	}
@@ -88,8 +88,8 @@ func (h *ConsoleAuthHandler) InitConsole(c *echo.Context) error {
 }
 
 func (h *ConsoleAuthHandler) Login(c *echo.Context) error {
-	username := strings.TrimSpace(firstNonEmpty(c.FormValue("username"), valueFromJSON(c, "username")))
-	password := firstNonEmpty(c.FormValue("password"), valueFromJSON(c, "password"))
+	username := strings.TrimSpace(c.FormValue("username"))
+	password := c.FormValue("password")
 	user, err := h.repo.GetUserByUsername(c.Request().Context(), username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -136,9 +136,9 @@ func (h *ConsoleAuthHandler) ChangePassword(c *echo.Context) error {
 	if userID == "" {
 		return response.Error(c, http.StatusUnauthorized, "Unauthorized")
 	}
-	current := firstNonEmpty(c.FormValue("current-password"), valueFromJSON(c, "current-password"), valueFromJSON(c, "currentPassword"))
-	next := firstNonEmpty(c.FormValue("new-password"), valueFromJSON(c, "new-password"), valueFromJSON(c, "newPassword"))
-	confirm := firstNonEmpty(c.FormValue("confirm-password"), valueFromJSON(c, "confirm-password"), valueFromJSON(c, "confirmPassword"))
+	current := firstNonEmpty(c.FormValue("current-password"), c.FormValue("currentPassword"))
+	next := firstNonEmpty(c.FormValue("new-password"), c.FormValue("newPassword"))
+	confirm := firstNonEmpty(c.FormValue("confirm-password"), c.FormValue("confirmPassword"))
 
 	switch {
 	case strings.TrimSpace(current) == "" || strings.TrimSpace(next) == "" || strings.TrimSpace(confirm) == "":
@@ -168,21 +168,4 @@ func (h *ConsoleAuthHandler) ChangePassword(c *echo.Context) error {
 		return err
 	}
 	return c.JSON(http.StatusOK, map[string]any{"success": true, "message": "Password updated"})
-}
-
-func valueFromJSON(c *echo.Context, key string) string {
-	value := c.Get(key)
-	if value == nil {
-		return ""
-	}
-	return strings.TrimSpace(anyString(value))
-}
-
-func firstNonEmpty(values ...string) string {
-	for _, v := range values {
-		if strings.TrimSpace(v) != "" {
-			return v
-		}
-	}
-	return ""
 }

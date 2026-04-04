@@ -136,31 +136,32 @@ func (h *SyncHandler) syncChanges(ctx context.Context, vault *model.Vault, req s
 	for _, item := range req.Assets {
 		clientAssets[item.ID] = item.Hash
 	}
+	serverNoteHashes := make(map[string]string, len(serverNotes))
+	for _, note := range serverNotes {
+		serverNoteHashes[note.ClientID] = stringValue(note.Hash)
+	}
+	serverAssetHashes := make(map[string]string, len(serverAssets))
+	for _, asset := range serverAssets {
+		serverAssetHashes[asset.ClientID] = asset.MD5
+	}
 
 	var notesToDelete []model.NoteHashEntry
-	for _, note := range serverNotes {
-		hash := stringValue(note.Hash)
-		if _, ok := clientNotes[note.ClientID]; !ok {
-			notesToDelete = append(notesToDelete, model.NoteHashEntry{ID: note.ClientID, Hash: hash})
+	for clientID, hash := range serverNoteHashes {
+		if _, ok := clientNotes[clientID]; !ok {
+			notesToDelete = append(notesToDelete, model.NoteHashEntry{ID: clientID, Hash: hash})
 		}
 	}
 
 	var assetsToDelete []model.AssetHashEntry
-	for _, asset := range serverAssets {
-		if _, ok := clientAssets[asset.ClientID]; !ok {
-			assetsToDelete = append(assetsToDelete, model.AssetHashEntry{ID: asset.ClientID, Hash: asset.MD5})
+	for clientID, hash := range serverAssetHashes {
+		if _, ok := clientAssets[clientID]; !ok {
+			assetsToDelete = append(assetsToDelete, model.AssetHashEntry{ID: clientID, Hash: hash})
 		}
 	}
 
 	var notesToUpsert []model.NoteHashEntry
 	for id, hash := range clientNotes {
-		serverHash := ""
-		for _, note := range serverNotes {
-			if note.ClientID == id {
-				serverHash = stringValue(note.Hash)
-				break
-			}
-		}
+		serverHash := serverNoteHashes[id]
 		if hash != serverHash {
 			notesToUpsert = append(notesToUpsert, model.NoteHashEntry{ID: id, Hash: hash})
 		}
@@ -168,13 +169,7 @@ func (h *SyncHandler) syncChanges(ctx context.Context, vault *model.Vault, req s
 
 	var assetsToUpsert []model.AssetHashEntry
 	for id, hash := range clientAssets {
-		serverHash := ""
-		for _, asset := range serverAssets {
-			if asset.ClientID == id {
-				serverHash = asset.MD5
-				break
-			}
-		}
+		serverHash := serverAssetHashes[id]
 		if hash != serverHash {
 			assetsToUpsert = append(assetsToUpsert, model.AssetHashEntry{ID: id, Hash: hash})
 		}
@@ -527,11 +522,4 @@ func truncate(value string, n int) string {
 		return value
 	}
 	return value[:n]
-}
-
-func stringValue(value *string) string {
-	if value == nil {
-		return ""
-	}
-	return *value
 }

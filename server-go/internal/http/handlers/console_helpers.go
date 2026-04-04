@@ -1,8 +1,15 @@
 package handlers
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/labstack/echo/v5"
+
+	"mdbrain.dev/internal/domain/model"
+	"mdbrain.dev/internal/infra/repository"
 )
 
 func anyString(v any) string {
@@ -17,6 +24,32 @@ func anyString(v any) string {
 	default:
 		return fmt.Sprintf("%v", v)
 	}
+}
+
+func stringValue(v *string) string {
+	if v == nil {
+		return ""
+	}
+	return *v
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if strings.TrimSpace(v) != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+func authorizedVaultForSession(c *echo.Context, repo *repository.Repository) (*model.Vault, string, error) {
+	tenantID := strings.TrimSpace(anyString(c.Get("session.tenant_id")))
+	vaultID := strings.TrimSpace(c.Param("id"))
+	vault, err := repo.GetVaultByID(c.Request().Context(), vaultID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, tenantID, nil
+	}
+	return vault, tenantID, err
 }
 
 func formatStorageSize(bytes int64) string {

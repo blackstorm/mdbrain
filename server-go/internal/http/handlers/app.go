@@ -60,7 +60,7 @@ func (h *AppHandler) GetNote(c *echo.Context) error {
 
 		if len(pathClientIDs) == 0 {
 			if vault.RootNoteID != nil && *vault.RootNoteID != "" {
-				rootNote, err := h.repo.GetNoteForApp(c.Request().Context(), vault.ID, *vault.RootNoteID)
+				rootNote, err := h.repo.GetNoteByClientID(c.Request().Context(), vault.ID, *vault.RootNoteID)
 				if err == nil && rootNote != nil {
 					renderData, err := h.prepareNoteData(c, rootNote, vault.ID)
 					if err != nil {
@@ -103,7 +103,7 @@ func (h *AppHandler) GetNote(c *echo.Context) error {
 		validNotes := make([]model.Note, 0, len(pathClientIDs))
 		validIDs := make([]string, 0, len(pathClientIDs))
 		for _, clientID := range pathClientIDs {
-			note, err := h.repo.GetNoteForApp(c.Request().Context(), vault.ID, clientID)
+			note, err := h.repo.GetNoteByClientID(c.Request().Context(), vault.ID, clientID)
 			if err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
 					continue

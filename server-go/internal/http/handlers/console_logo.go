@@ -30,7 +30,7 @@ func NewConsoleLogoHandler(repo *repository.Repository, objectStore store.Object
 }
 
 func (h *ConsoleLogoHandler) UploadVaultLogo(c *echo.Context) error {
-	vault, tenantID, err := (&ConsoleVaultHandler{repo: h.repo, store: h.store}).authorizedVault(c)
+	vault, tenantID, err := authorizedVaultForSession(c, h.repo)
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func (h *ConsoleLogoHandler) UploadVaultLogo(c *echo.Context) error {
 }
 
 func (h *ConsoleLogoHandler) DeleteVaultLogo(c *echo.Context) error {
-	vault, tenantID, err := (&ConsoleVaultHandler{repo: h.repo, store: h.store}).authorizedVault(c)
+	vault, tenantID, err := authorizedVaultForSession(c, h.repo)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func (h *ConsoleLogoHandler) ServeVaultFavicon(c *echo.Context) error {
 }
 
 func (h *ConsoleLogoHandler) serveVaultObject(c *echo.Context, favicon bool) error {
-	vault, tenantID, err := (&ConsoleVaultHandler{repo: h.repo, store: h.store}).authorizedVault(c)
+	vault, tenantID, err := authorizedVaultForSession(c, h.repo)
 	if err != nil {
 		return err
 	}
