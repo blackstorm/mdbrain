@@ -59,9 +59,7 @@ func (h *SyncHandler) SyncChanges(c *echo.Context) error {
 
 	var req syncChangesRequest
 	if err := c.Bind(&req); err != nil {
-		respErr := response.BadRequest(c, "Invalid JSON body")
-		_ = h.repo.RecordVaultPublishError(c.Request().Context(), vault.ID, "bad_request", "Invalid JSON body")
-		return respErr
+		return h.recordAndWrite(c, vault, badRequestResult("Invalid JSON body"))
 	}
 
 	resp := h.syncChanges(c.Request().Context(), vault, req)

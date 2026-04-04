@@ -16,7 +16,3 @@ func Error(c *echo.Context, status int, message string) error {
 func Unauthorized(c *echo.Context, message string) error {
 	return Error(c, http.StatusUnauthorized, message)
 }
-
-func BadRequest(c *echo.Context, message string) error {
-	return Error(c, http.StatusBadRequest, message)
-}

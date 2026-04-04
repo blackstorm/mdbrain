@@ -9,7 +9,6 @@ import (
 	"errors"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/labstack/echo/v5"
 )
@@ -23,14 +22,6 @@ type Session struct {
 	UserID    string `json:"user_id,omitempty"`
 	TenantID  string `json:"tenant_id,omitempty"`
 	CSRFToken string `json:"csrf_token,omitempty"`
-}
-
-func (s Session) Authenticated() bool {
-	return strings.TrimSpace(s.UserID) != ""
-}
-
-func (s Session) Clone() Session {
-	return Session{UserID: s.UserID, TenantID: s.TenantID, CSRFToken: s.CSRFToken}
 }
 
 type SessionManager struct {
@@ -159,17 +150,11 @@ func putSession(c *echo.Context, session Session) {
 	c.Set("csrf_token", session.CSRFToken)
 }
 
-func sessionTenantID(c *echo.Context) string {
-	return strings.TrimSpace(valueAsString(c.Get("session.tenant_id")))
-}
-
 func sessionUserID(c *echo.Context) string {
-	return strings.TrimSpace(valueAsString(c.Get("session.user_id")))
-}
-
-func valueAsString(value any) string {
-	s, _ := value.(string)
-	return s
+	if value, ok := c.Get("session.user_id").(string); ok {
+		return strings.TrimSpace(value)
+	}
+	return ""
 }
 
 func stateChangingMethod(method string) bool {
@@ -194,8 +179,4 @@ func parseCSRFToken(c *echo.Context) string {
 
 func redirect(c *echo.Context, location string) error {
 	return c.Redirect(http.StatusFound, location)
-}
-
-func nowUTC() time.Time {
-	return time.Now().UTC()
 }
