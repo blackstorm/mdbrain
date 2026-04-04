@@ -150,13 +150,6 @@ func putSession(c *echo.Context, session Session) {
 	c.Set("csrf_token", session.CSRFToken)
 }
 
-func sessionUserID(c *echo.Context) string {
-	if value, ok := c.Get("session.user_id").(string); ok {
-		return strings.TrimSpace(value)
-	}
-	return ""
-}
-
 func stateChangingMethod(method string) bool {
 	switch method {
 	case http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch:
@@ -175,8 +168,4 @@ func parseCSRFToken(c *echo.Context) string {
 		return token
 	}
 	return ""
-}
-
-func redirect(c *echo.Context, location string) error {
-	return c.Redirect(http.StatusFound, location)
 }

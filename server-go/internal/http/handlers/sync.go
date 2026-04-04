@@ -333,12 +333,12 @@ func (h *SyncHandler) syncAsset(ctx context.Context, vault *model.Vault, assetID
 func (h *SyncHandler) requireSyncVault(c *echo.Context) (*model.Vault, error) {
 	authHeader := c.Request().Header.Get("Authorization")
 	if !strings.HasPrefix(authHeader, "Bearer ") {
-		return nil, response.Unauthorized(c, "Missing authorization header")
+		return nil, response.Error(c, http.StatusUnauthorized, "Missing authorization header")
 	}
 	syncKey := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
 	vault, err := h.repo.GetVaultBySyncKey(c.Request().Context(), syncKey)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, response.Unauthorized(c, "Invalid publish key")
+		return nil, response.Error(c, http.StatusUnauthorized, "Invalid publish key")
 	}
 	if err != nil {
 		return nil, err

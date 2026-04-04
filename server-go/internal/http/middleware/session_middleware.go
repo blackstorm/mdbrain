@@ -54,10 +54,11 @@ func ConsoleCSRFMiddleware() echo.MiddlewareFunc {
 func ConsoleAuthMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error {
-			if strings.TrimSpace(sessionUserID(c)) != "" {
+			userID, _ := c.Get("session.user_id").(string)
+			if strings.TrimSpace(userID) != "" {
 				return next(c)
 			}
-			return redirect(c, "/console/login")
+			return c.Redirect(http.StatusFound, "/console/login")
 		}
 	}
 }
@@ -82,10 +83,10 @@ func ConsoleInitCheckMiddleware(repo *repository.Repository) echo.MiddlewareFunc
 			}
 
 			if hasUser && path == "/console/init" {
-				return redirect(c, "/console/login")
+				return c.Redirect(http.StatusFound, "/console/login")
 			}
 			if !hasUser && path != "/console/init" {
-				return redirect(c, "/console/init")
+				return c.Redirect(http.StatusFound, "/console/init")
 			}
 			return next(c)
 		}

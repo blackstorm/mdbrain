@@ -30,10 +30,7 @@ func ConsoleAssetURL(vaultID, objectKey string) string {
 func (h *ConsoleCommonHandler) ServeConsoleAsset(c *echo.Context) error {
 	tenantID := strings.TrimSpace(anyString(c.Get("session.tenant_id")))
 	vaultID := strings.TrimSpace(c.Param("id"))
-	path := strings.TrimSpace(c.Param("path"))
-	if path == "" {
-		path = strings.TrimSpace(c.Param("*"))
-	}
+	path := strings.TrimSpace(c.Param("*"))
 	vault, err := h.repo.GetVaultByID(c.Request().Context(), vaultID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
