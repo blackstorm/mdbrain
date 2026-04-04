@@ -167,10 +167,11 @@ func (h *ConsoleLogoHandler) serveVaultObject(c *echo.Context, favicon bool) err
 	if err != nil {
 		return err
 	}
-	c.Response().Header().Set("Content-Type", firstNonEmpty(object.ContentType, "application/octet-stream"))
+	contentType := firstNonEmpty(object.ContentType, "application/octet-stream")
+	c.Response().Header().Set("Content-Type", contentType)
 	c.Response().Header().Set("Content-Length", strconv.Itoa(len(body)))
 	c.Response().Header().Set("Cache-Control", "public, max-age=31536000, immutable")
-	return c.Blob(http.StatusOK, firstNonEmpty(object.ContentType, "application/octet-stream"), body)
+	return c.Blob(http.StatusOK, contentType, body)
 }
 
 func generateFavicon(content []byte, contentType string) ([]byte, error) {

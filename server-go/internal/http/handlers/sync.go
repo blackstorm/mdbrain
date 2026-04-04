@@ -74,8 +74,7 @@ func (h *SyncHandler) SyncNote(c *echo.Context) error {
 
 	var req syncNoteRequest
 	if err := c.Bind(&req); err != nil {
-		respErr := handlerResult{Status: http.StatusBadRequest, Body: map[string]any{"success": false, "error": "Invalid JSON body"}}
-		return h.recordAndWrite(c, vault, respErr)
+		return h.recordAndWrite(c, vault, badRequestResult("Invalid JSON body"))
 	}
 	resp := h.syncNote(c.Request().Context(), vault, c.Param("id"), req)
 	return h.recordAndWrite(c, vault, resp)
@@ -89,8 +88,7 @@ func (h *SyncHandler) SyncAsset(c *echo.Context) error {
 
 	var req syncAssetRequest
 	if err := c.Bind(&req); err != nil {
-		respErr := handlerResult{Status: http.StatusBadRequest, Body: map[string]any{"success": false, "error": "Invalid JSON body"}}
-		return h.recordAndWrite(c, vault, respErr)
+		return h.recordAndWrite(c, vault, badRequestResult("Invalid JSON body"))
 	}
 	resp := h.syncAsset(c.Request().Context(), vault, c.Param("id"), req)
 	return h.recordAndWrite(c, vault, resp)
@@ -119,11 +117,11 @@ type handlerResult struct {
 func (h *SyncHandler) syncChanges(ctx context.Context, vault *model.Vault, req syncChangesRequest) handlerResult {
 	serverNotes, err := h.repo.ListNotesByVault(ctx, vault.ID)
 	if err != nil {
-		return internalErrorResult(err)
+		return internalErrorResult()
 	}
 	serverAssets, err := h.repo.ListAssetsByVault(ctx, vault.ID)
 	if err != nil {
-		return internalErrorResult(err)
+		return internalErrorResult()
 	}
 
 	clientNotes := make(map[string]string, len(req.Notes))
@@ -175,12 +173,12 @@ func (h *SyncHandler) syncChanges(ctx context.Context, vault *model.Vault, req s
 
 	for _, item := range notesToDelete {
 		if err := h.deleteNote(ctx, vault.ID, item.ID); err != nil {
-			return internalErrorResult(err)
+			return internalErrorResult()
 		}
 	}
 	for _, item := range assetsToDelete {
 		if err := h.deleteAsset(ctx, vault.ID, item.ID); err != nil {
-			return internalErrorResult(err)
+			return internalErrorResult()
 		}
 	}
 
@@ -224,7 +222,7 @@ func (h *SyncHandler) syncNote(ctx context.Context, vault *model.Vault, noteID s
 
 	existing, err := h.repo.GetNoteByClientID(ctx, vault.ID, noteID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return internalErrorResult(err)
+		return internalErrorResult()
 	}
 	if existing != nil && stringValue(existing.Hash) == noteHash && existing.Path == notePath {
 		return handlerResult{Status: http.StatusOK, Body: map[string]any{"status": "skipped", "noteId": noteID}}
@@ -241,7 +239,7 @@ func (h *SyncHandler) syncNote(ctx context.Context, vault *model.Vault, noteID s
 	}
 
 	if err := h.upsertNoteWithLinks(ctx, vault.TenantID, vault.ID, noteID, notePath, *req.Content, noteHash, metadataJSON); err != nil {
-		return internalErrorResult(err)
+		return internalErrorResult()
 	}
 
 	assetEntries := *req.Assets
@@ -250,14 +248,14 @@ func (h *SyncHandler) syncNote(ctx context.Context, vault *model.Vault, noteID s
 		assetIDs = append(assetIDs, item.ID)
 	}
 	if err := h.updateNoteAssetRefs(ctx, vault.ID, noteID, assetIDs); err != nil {
-		return internalErrorResult(err)
+		return internalErrorResult()
 	}
 
 	var needUploadAssets []model.AssetHashEntry
 	for _, entry := range assetEntries {
 		existing, err := h.repo.GetAssetByClientID(ctx, vault.ID, entry.ID)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return internalErrorResult(err)
+			return internalErrorResult()
 		}
 		if existing == nil || existing.MD5 != entry.Hash {
 			needUploadAssets = append(needUploadAssets, entry)
@@ -268,7 +266,7 @@ func (h *SyncHandler) syncNote(ctx context.Context, vault *model.Vault, noteID s
 	for _, entry := range *req.LinkedNotes {
 		existing, err := h.repo.GetNoteByClientID(ctx, vault.ID, entry.ID)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return internalErrorResult(err)
+			return internalErrorResult()
 		}
 		if existing == nil || stringValue(existing.Hash) != entry.Hash {
 			needUploadNotes = append(needUploadNotes, entry)
@@ -303,7 +301,7 @@ func (h *SyncHandler) syncAsset(ctx context.Context, vault *model.Vault, assetID
 
 	existing, err := h.repo.GetAssetByClientID(ctx, vault.ID, assetID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return internalErrorResult(err)
+		return internalErrorResult()
 	}
 	if existing != nil && existing.MD5 == assetHash && existing.Path == assetPath {
 		return handlerResult{Status: http.StatusOK, Body: map[string]any{"status": "skipped", "assetId": assetID}}
@@ -318,14 +316,14 @@ func (h *SyncHandler) syncAsset(ctx context.Context, vault *model.Vault, assetID
 
 	objectKey := store.AssetObjectKey(assetID, store.ExtensionFromPath(assetPath))
 	if err := h.store.PutObject(vault.ID, objectKey, bytes, contentType); err != nil {
-		return internalErrorResult(err)
+		return internalErrorResult()
 	}
 	size := int64(len(bytes))
 	if req.Size != nil {
 		size = *req.Size
 	}
 	if err := h.repo.UpsertAsset(ctx, uuid.NewString(), vault.TenantID, vault.ID, assetID, assetPath, objectKey, size, contentType, assetHash); err != nil {
-		return internalErrorResult(err)
+		return internalErrorResult()
 	}
 	return handlerResult{Status: http.StatusOK, Body: map[string]any{"status": "stored", "assetId": assetID}}
 }
@@ -481,7 +479,7 @@ func (h *SyncHandler) deleteAsset(ctx context.Context, vaultID, assetID string) 
 	return h.repo.DeleteAssetByClientID(ctx, vaultID, assetID)
 }
 
-func internalErrorResult(_ error) handlerResult {
+func internalErrorResult() handlerResult {
 	return handlerResult{
 		Status: http.StatusInternalServerError,
 		Body:   map[string]any{"success": false, "error": "Internal server error"},
