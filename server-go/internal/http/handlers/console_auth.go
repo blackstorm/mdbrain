@@ -58,7 +58,7 @@ func (h *ConsoleAuthHandler) InitConsole(c *echo.Context) error {
 	username := strings.TrimSpace(c.FormValue("username"))
 	password := c.FormValue("password")
 	tenantName := strings.TrimSpace(firstNonEmpty(c.FormValue("tenant-name"), c.FormValue("tenantName")))
-	if username == "" || password == "" || tenantName == "" {
+	if username == "" || strings.TrimSpace(password) == "" || tenantName == "" {
 		return c.JSON(http.StatusOK, map[string]any{"success": false, "error": "Missing required fields"})
 	}
 

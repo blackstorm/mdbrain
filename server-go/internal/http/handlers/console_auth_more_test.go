@@ -33,6 +33,21 @@ func TestConsoleInitValidationAndAlreadyInitialized(t *testing.T) {
 		t.Fatalf("expected success=false, got: %#v", missingPayload)
 	}
 
+	req = httptest.NewRequest(http.MethodPost, "/console/init", strings.NewReader("username=admin&password=%20%20%20&tenant-name=Acme"))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)
+	rec = httptest.NewRecorder()
+	c = echo.New().NewContext(req, rec)
+	if err := handler.InitConsole(c); err != nil {
+		t.Fatalf("init console: %v", err)
+	}
+	if rec.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d body=%s", rec.Code, rec.Body.String())
+	}
+	whitespacePayload := readJSONMap(t, rec.Body.Bytes())
+	if whitespacePayload["success"] != false {
+		t.Fatalf("expected success=false for whitespace password, got: %#v", whitespacePayload)
+	}
+
 	tenantID := uuid.NewString()
 	userID := uuid.NewString()
 	if err := repo.CreateTenant(context.Background(), tenantID, "Acme"); err != nil {
