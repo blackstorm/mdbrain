@@ -99,7 +99,9 @@ For a short overview table, see [../README.md](../README.md#toc-configuration).
 | Name | Description | Default | Required |
 |---|---|---|---|
 | `ENVIRONMENT` | `development` or `production` | `production` (Docker image default) | No |
-| `HOST` | Bind host for both servers | `0.0.0.0` | No |
+| `HOST` | Fallback bind host for both servers (used when `APP_HOST`/`CONSOLE_HOST` are not set) | `0.0.0.0` | No |
+| `APP_HOST` | Bind host for app server | `HOST` fallback | No |
+| `CONSOLE_HOST` | Bind host for console server | `HOST` fallback | No |
 | `APP_PORT` | App server port | `8080` | No |
 | `CONSOLE_PORT` | Console server port | `9090` | No |
 | `DATA_PATH` | Base data directory (DB, secrets, local storage) | `data` (Docker image: `/app/data`) | No |

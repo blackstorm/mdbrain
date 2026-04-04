@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"net/http"
 	"strconv"
 	"strings"
 )
@@ -59,19 +58,6 @@ func ParseHostDomain(host string) ParsedHost {
 		return ParsedHost{Error: "invalid"}
 	}
 	return ParsedHost{Domain: domain}
-}
-
-func HostErrorResponse(w http.ResponseWriter, parsed ParsedHost) {
-	status := http.StatusBadRequest
-	body := "Bad request"
-	if parsed.Error == "unbound" {
-		status = http.StatusForbidden
-		body = "Forbidden"
-	}
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-store")
-	w.WriteHeader(status)
-	_, _ = w.Write([]byte(body))
 }
 
 func validPort(raw string) bool {

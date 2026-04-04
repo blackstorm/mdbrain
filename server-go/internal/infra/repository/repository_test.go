@@ -18,7 +18,7 @@ func setupRepository(t *testing.T) *Repository {
 
 	dataPath := filepath.Join(t.TempDir(), "data")
 	t.Setenv("DATA_PATH", dataPath)
-	cfg, err := config.Load(context.Background(), repoRoot())
+	cfg, err := config.Load(repoRoot())
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}
@@ -28,7 +28,7 @@ func setupRepository(t *testing.T) *Repository {
 		t.Fatalf("open db: %v", err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	if err := dbinfra.RunMigrations(context.Background(), db, cfg.MigrationDir); err != nil {
+	if err := dbinfra.RunMigrations(context.Background(), db, cfg.MigrationDir()); err != nil {
 		t.Fatalf("migrate db: %v", err)
 	}
 	return New(db)

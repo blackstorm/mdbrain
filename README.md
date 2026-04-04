@@ -75,6 +75,9 @@ Mdbrain reads configuration from environment variables.
 
 | Name | Description | Default | Required |
 |---|---|---|---|
+| `HOST` | Fallback bind host for both servers (used when `APP_HOST`/`CONSOLE_HOST` are not set) | `0.0.0.0` | No |
+| `APP_HOST` | Bind host for app server | `HOST` fallback | No |
+| `CONSOLE_HOST` | Bind host for console server | `HOST` fallback | No |
 | `STORAGE_TYPE` | Storage backend: `local` or `s3` | `local` | No |
 | `DATA_PATH` | Base data directory | `/app/data` | No |
 | `CADDY_ON_DEMAND_TLS_ENABLED` | Enable automatic HTTPS certificates | `false` | No |

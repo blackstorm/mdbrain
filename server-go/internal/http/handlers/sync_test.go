@@ -26,7 +26,7 @@ func setupSyncHandler(t *testing.T) (*SyncHandler, *repository.Repository, strin
 	dataPath := filepath.Join(t.TempDir(), "data")
 	t.Setenv("DATA_PATH", dataPath)
 	projectRoot := repoRoot()
-	cfg, err := config.Load(context.Background(), projectRoot)
+	cfg, err := config.Load(projectRoot)
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}
@@ -35,7 +35,7 @@ func setupSyncHandler(t *testing.T) (*SyncHandler, *repository.Repository, strin
 		t.Fatalf("open db: %v", err)
 	}
 	t.Cleanup(func() { _ = sqlDB.Close() })
-	if err := db.RunMigrations(context.Background(), sqlDB, cfg.MigrationDir); err != nil {
+	if err := db.RunMigrations(context.Background(), sqlDB, cfg.MigrationDir()); err != nil {
 		t.Fatalf("run migration: %v", err)
 	}
 

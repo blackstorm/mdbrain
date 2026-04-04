@@ -320,7 +320,7 @@ func setupMiddlewareRepo(t *testing.T) *repository.Repository {
 	dataPath := filepath.Join(t.TempDir(), "data")
 	t.Setenv("DATA_PATH", dataPath)
 
-	cfg, err := config.Load(context.Background(), middlewareRepoRoot())
+	cfg, err := config.Load(middlewareRepoRoot())
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}
@@ -329,7 +329,7 @@ func setupMiddlewareRepo(t *testing.T) *repository.Repository {
 		t.Fatalf("open db: %v", err)
 	}
 	t.Cleanup(func() { _ = sqlDB.Close() })
-	if err := db.RunMigrations(context.Background(), sqlDB, cfg.MigrationDir); err != nil {
+	if err := db.RunMigrations(context.Background(), sqlDB, cfg.MigrationDir()); err != nil {
 		t.Fatalf("run migration: %v", err)
 	}
 	return repository.New(sqlDB)

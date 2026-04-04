@@ -18,7 +18,7 @@ func TestBuildWiresAppAndConsoleRoutes(t *testing.T) {
 	t.Setenv("APP_PORT", "18080")
 	t.Setenv("CONSOLE_PORT", "19090")
 
-	cfg, err := config.Load(context.Background(), appRepoRoot(t))
+	cfg, err := config.Load(appRepoRoot(t))
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}
@@ -26,7 +26,7 @@ func TestBuildWiresAppAndConsoleRoutes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := dbinfra.RunMigrations(context.Background(), db, cfg.MigrationDir); err != nil {
+	if err := dbinfra.RunMigrations(context.Background(), db, cfg.MigrationDir()); err != nil {
 		_ = db.Close()
 		t.Fatalf("run migrations: %v", err)
 	}

@@ -147,7 +147,7 @@ func TestRunMigrationsAndPendingMigrations(t *testing.T) {
 	cfg := testConfig(t)
 	db := openManagedTestSQLite(t)
 
-	pending, err := PendingMigrations(ctx, db, cfg.MigrationDir)
+	pending, err := PendingMigrations(ctx, db, cfg.MigrationDir())
 	if err != nil {
 		t.Fatalf("pending migrations before run: %v", err)
 	}
@@ -155,11 +155,11 @@ func TestRunMigrationsAndPendingMigrations(t *testing.T) {
 		t.Fatal("expected fresh database to have pending atlas migrations")
 	}
 
-	if err := RunMigrations(ctx, db, cfg.MigrationDir); err != nil {
+	if err := RunMigrations(ctx, db, cfg.MigrationDir()); err != nil {
 		t.Fatalf("run migrations: %v", err)
 	}
 
-	pending, err = PendingMigrations(ctx, db, cfg.MigrationDir)
+	pending, err = PendingMigrations(ctx, db, cfg.MigrationDir())
 	if err != nil {
 		t.Fatalf("pending migrations after run: %v", err)
 	}
@@ -273,7 +273,7 @@ VALUES (1, CURRENT_TIMESTAMP, 'initial');
 func TestCreateMigrationFromEntSchema(t *testing.T) {
 	ctx := context.Background()
 	cfg := testConfig(t)
-	cfg.MigrationDir = filepath.Join(t.TempDir(), "migrations")
+	cfg.ProjectRoot = t.TempDir()
 
 	created, err := CreateMigration(ctx, cfg, " Initial Schema ")
 	if err != nil {
@@ -372,7 +372,7 @@ func testConfig(t *testing.T) *config.Config {
 	t.Helper()
 
 	t.Setenv("DATA_PATH", filepath.Join(t.TempDir(), "data"))
-	cfg, err := config.Load(context.Background(), repoRoot())
+	cfg, err := config.Load(repoRoot())
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}

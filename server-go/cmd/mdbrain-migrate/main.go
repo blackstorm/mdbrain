@@ -29,7 +29,7 @@ func run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	cfg, err := config.Load(ctx, projectRoot)
+	cfg, err := config.Load(projectRoot)
 	if err != nil {
 		return err
 	}
@@ -37,11 +37,11 @@ func run(ctx context.Context, args []string) error {
 	switch args[0] {
 	case "migrate":
 		return withDB(ctx, cfg, func(db *sql.DB) error {
-			return dbinfra.RunMigrations(ctx, db, cfg.MigrationDir)
+			return dbinfra.RunMigrations(ctx, db, cfg.MigrationDir())
 		})
 	case "pending":
 		return withDB(ctx, cfg, func(db *sql.DB) error {
-			pending, err := dbinfra.PendingMigrations(ctx, db, cfg.MigrationDir)
+			pending, err := dbinfra.PendingMigrations(ctx, db, cfg.MigrationDir())
 			if err != nil {
 				return err
 			}

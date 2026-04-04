@@ -24,7 +24,7 @@ func OpenSQLite(ctx context.Context, cfg *config.Config) (*sql.DB, error) {
 		return nil, err
 	}
 
-	dsn, err := sqliteDSN(cfg.DatabasePath)
+	dsn, err := sqliteDSN(cfg.DatabasePath())
 	if err != nil {
 		return nil, err
 	}

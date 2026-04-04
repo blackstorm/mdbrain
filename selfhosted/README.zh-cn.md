@@ -99,7 +99,9 @@ Compose 会从 `selfhosted/.env` 读取环境变量（参考 `selfhosted/.env.ex
 | 变量名 | 说明 | 默认值 | 必填 |
 |---|---|---|---|
 | `ENVIRONMENT` | `development` 或 `production` | `production`（Docker 镜像默认） | 否 |
-| `HOST` | 监听地址（前台与 Console 共用） | `0.0.0.0` | 否 |
+| `HOST` | App 与 Console 的兜底监听地址（未设置 `APP_HOST`/`CONSOLE_HOST` 时生效） | `0.0.0.0` | 否 |
+| `APP_HOST` | App 服务监听地址 | 回退到 `HOST` | 否 |
+| `CONSOLE_HOST` | Console 服务监听地址 | 回退到 `HOST` | 否 |
 | `APP_PORT` | App 端口 | `8080` | 否 |
 | `CONSOLE_PORT` | Console 端口 | `9090` | 否 |
 | `DATA_PATH` | 数据目录（DB、secrets、本地存储） | `data`（Docker 镜像：`/app/data`） | 否 |

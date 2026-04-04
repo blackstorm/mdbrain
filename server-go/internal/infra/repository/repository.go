@@ -37,14 +37,6 @@ func New(db *sql.DB) *Repository {
 	}
 }
 
-func (r *Repository) DB() *sql.DB {
-	return r.db
-}
-
-func (r *Repository) Client() *dbent.Client {
-	return r.client
-}
-
 func (r *Repository) CreateTenant(ctx context.Context, id, name string) error {
 	return r.client.Tenant.Create().
 		SetID(id).
@@ -281,16 +273,6 @@ func (r *Repository) DeleteNoteByClientID(ctx context.Context, vaultID, clientID
 	return err
 }
 
-func (r *Repository) GetNoteByPath(ctx context.Context, vaultID, path string) (*model.Note, error) {
-	entity, err := r.client.Note.Query().
-		Where(note.VaultIDEQ(vaultID), note.PathEQ(path), note.DeletedAtIsNil()).
-		First(ctx)
-	if err != nil {
-		return nil, normalizeNotFound(err)
-	}
-	return noteModel(entity), nil
-}
-
 func (r *Repository) GetNoteByClientID(ctx context.Context, vaultID, clientID string) (*model.Note, error) {
 	entity, err := r.client.Note.Query().
 		Where(note.VaultIDEQ(vaultID), note.ClientIDEQ(clientID), note.DeletedAtIsNil()).
@@ -319,16 +301,6 @@ func (r *Repository) ListNotesByVault(ctx context.Context, vaultID string) ([]mo
 func (r *Repository) GetNotesForLinkResolution(ctx context.Context, vaultID string) ([]model.Note, error) {
 	entities, err := r.client.Note.Query().
 		Where(note.VaultIDEQ(vaultID), note.DeletedAtIsNil()).
-		All(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return noteModels(entities), nil
-}
-
-func (r *Repository) ListNotesWithWikilinksByVault(ctx context.Context, vaultID string) ([]model.Note, error) {
-	entities, err := r.client.Note.Query().
-		Where(note.VaultIDEQ(vaultID), note.DeletedAtIsNil(), note.ContentContains("[[")).
 		All(ctx)
 	if err != nil {
 		return nil, err
@@ -525,17 +497,6 @@ func (r *Repository) GetVaultStorageSize(ctx context.Context, vaultID string) (i
 	return total, nil
 }
 
-func (r *Repository) UpsertNoteAssetRef(ctx context.Context, vaultID, noteClientID, assetClientID string) error {
-	return r.client.NoteAssetRef.Create().
-		SetID(uuid.NewString()).
-		SetVaultID(vaultID).
-		SetNoteClientID(noteClientID).
-		SetAssetClientID(assetClientID).
-		OnConflictColumns(noteassetref.FieldVaultID, noteassetref.FieldNoteClientID, noteassetref.FieldAssetClientID).
-		DoNothing().
-		Exec(ctx)
-}
-
 func (r *Repository) DeleteNoteAssetRefsByNote(ctx context.Context, vaultID, noteClientID string) error {
 	_, err := r.client.NoteAssetRef.Delete().
 		Where(noteassetref.VaultIDEQ(vaultID), noteassetref.NoteClientIDEQ(noteClientID)).
@@ -550,30 +511,9 @@ func (r *Repository) DeleteNoteAssetRefsByAsset(ctx context.Context, vaultID, as
 	return err
 }
 
-func (r *Repository) DeleteNoteAssetRef(ctx context.Context, vaultID, noteClientID, assetClientID string) error {
-	_, err := r.client.NoteAssetRef.Delete().
-		Where(
-			noteassetref.VaultIDEQ(vaultID),
-			noteassetref.NoteClientIDEQ(noteClientID),
-			noteassetref.AssetClientIDEQ(assetClientID),
-		).
-		Exec(ctx)
-	return err
-}
-
 func (r *Repository) GetAssetRefsByNote(ctx context.Context, vaultID, noteClientID string) ([]model.NoteAssetRef, error) {
 	entities, err := r.client.NoteAssetRef.Query().
 		Where(noteassetref.VaultIDEQ(vaultID), noteassetref.NoteClientIDEQ(noteClientID)).
-		All(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return noteAssetRefModels(entities), nil
-}
-
-func (r *Repository) GetAssetRefsByAsset(ctx context.Context, vaultID, assetClientID string) ([]model.NoteAssetRef, error) {
-	entities, err := r.client.NoteAssetRef.Query().
-		Where(noteassetref.VaultIDEQ(vaultID), noteassetref.AssetClientIDEQ(assetClientID)).
 		All(ctx)
 	if err != nil {
 		return nil, err

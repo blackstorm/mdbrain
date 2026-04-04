@@ -75,6 +75,9 @@ Mdbrain 通过环境变量读取配置。
 
 | 变量名 | 说明 | 默认值 | 必填 |
 |---|---|---|---|
+| `HOST` | App 与 Console 的兜底监听地址（当未设置 `APP_HOST`/`CONSOLE_HOST` 时生效） | `0.0.0.0` | 否 |
+| `APP_HOST` | App 服务监听地址 | 回退到 `HOST` | 否 |
+| `CONSOLE_HOST` | Console 服务监听地址 | 回退到 `HOST` | 否 |
 | `STORAGE_TYPE` | 存储后端：`local` 或 `s3` | `local` | 否 |
 | `DATA_PATH` | 数据目录 | `/app/data` | 否 |
 | `CADDY_ON_DEMAND_TLS_ENABLED` | 启用自动 HTTPS 证书 | `false` | 否 |

@@ -29,7 +29,7 @@ type ServerSet struct {
 }
 
 func Build(ctx context.Context, projectRoot string) (*ServerSet, error) {
-	cfg, err := config.Load(ctx, projectRoot)
+	cfg, err := config.Load(projectRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func Build(ctx context.Context, projectRoot string) (*ServerSet, error) {
 	if err != nil {
 		return nil, err
 	}
-	renderer, err := templatex.New(cfg.TemplateRoot)
+	renderer, err := templatex.New(cfg.TemplateRoot())
 	if err != nil {
 		return nil, err
 	}
@@ -65,8 +65,8 @@ func Build(ctx context.Context, projectRoot string) (*ServerSet, error) {
 	appEcho := echo.New()
 	appEcho.GET("/favicon.ico", appHandler.ServeFavicon)
 	appEcho.GET("/storage/*", appHandler.ServeAsset)
-	appEcho.Static("/publics/app", filepath.Join(cfg.PublicRoot, "app"))
-	appEcho.Static("/publics/shared", filepath.Join(cfg.PublicRoot, "shared"))
+	appEcho.Static("/publics/app", filepath.Join(cfg.PublicRoot(), "app"))
+	appEcho.Static("/publics/shared", filepath.Join(cfg.PublicRoot(), "shared"))
 	appEcho.GET("/", appHandler.GetNote)
 	appEcho.GET("/*", appHandler.GetNote)
 
@@ -76,8 +76,8 @@ func Build(ctx context.Context, projectRoot string) (*ServerSet, error) {
 	consoleEcho.Use(httpmw.ConsoleCSRFMiddleware())
 	consoleEcho.Use(httpmw.ConsoleInitCheckMiddleware(repo))
 	consoleEcho.Use(httpmw.ConsoleNoIndexMiddleware())
-	consoleEcho.Static("/publics/console", filepath.Join(cfg.PublicRoot, "console"))
-	consoleEcho.Static("/publics/shared", filepath.Join(cfg.PublicRoot, "shared"))
+	consoleEcho.Static("/publics/console", filepath.Join(cfg.PublicRoot(), "console"))
+	consoleEcho.Static("/publics/shared", filepath.Join(cfg.PublicRoot(), "shared"))
 	consoleEcho.GET("/", func(c *echo.Context) error { return c.Redirect(http.StatusFound, "/console") })
 	consoleEcho.GET("/robots.txt", internalHandler.Robots)
 	consoleEcho.OPTIONS("/obsidian/sync/changes", syncHandler.SyncChanges)
@@ -116,11 +116,11 @@ func Build(ctx context.Context, projectRoot string) (*ServerSet, error) {
 	servers := &ServerSet{
 		Config: cfg,
 		AppServer: &http.Server{
-			Addr:    cfg.AppHost + ":" + intToString(cfg.AppPort),
+			Addr:    cfg.AppHost + ":" + strconv.Itoa(cfg.AppPort),
 			Handler: appEcho,
 		},
 		ConsoleServer: &http.Server{
-			Addr:    cfg.ConsoleHost + ":" + intToString(cfg.ConsolePort),
+			Addr:    cfg.ConsoleHost + ":" + strconv.Itoa(cfg.ConsolePort),
 			Handler: consoleEcho,
 		},
 		close: func() error {
@@ -169,8 +169,4 @@ func (s *ServerSet) Shutdown(ctx context.Context) error {
 		s.close = nil
 	}
 	return nil
-}
-
-func intToString(v int) string {
-	return strconv.Itoa(v)
 }

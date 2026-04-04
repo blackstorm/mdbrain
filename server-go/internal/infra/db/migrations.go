@@ -62,12 +62,12 @@ func CreateMigration(ctx context.Context, cfg *config.Config, name string) ([]st
 		return nil, errors.New("migration name must contain letters or numbers")
 	}
 
-	dir, err := openMigrationDir(cfg.MigrationDir)
+	dir, err := openMigrationDir(cfg.MigrationDir())
 	if err != nil {
 		return nil, err
 	}
 
-	before, err := migrationDirEntries(cfg.MigrationDir)
+	before, err := migrationDirEntries(cfg.MigrationDir())
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func CreateMigration(ctx context.Context, cfg *config.Config, name string) ([]st
 		return nil, err
 	}
 
-	after, err := migrationDirEntries(cfg.MigrationDir)
+	after, err := migrationDirEntries(cfg.MigrationDir())
 	if err != nil {
 		return nil, err
 	}

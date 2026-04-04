@@ -18,7 +18,7 @@ func setupTestCore(t *testing.T) (*config.Config, *repository.Repository, *stora
 
 	dataPath := filepath.Join(t.TempDir(), "data")
 	t.Setenv("DATA_PATH", dataPath)
-	cfg, err := config.Load(context.Background(), handlersRepoRoot())
+	cfg, err := config.Load(handlersRepoRoot())
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}
@@ -27,7 +27,7 @@ func setupTestCore(t *testing.T) (*config.Config, *repository.Repository, *stora
 		t.Fatalf("open db: %v", err)
 	}
 	t.Cleanup(func() { _ = sqlDB.Close() })
-	if err := db.RunMigrations(context.Background(), sqlDB, cfg.MigrationDir); err != nil {
+	if err := db.RunMigrations(context.Background(), sqlDB, cfg.MigrationDir()); err != nil {
 		t.Fatalf("run migration: %v", err)
 	}
 
@@ -43,7 +43,7 @@ func setupTestCoreWithRenderer(t *testing.T) (*config.Config, *repository.Reposi
 	t.Helper()
 
 	cfg, repo, objectStore := setupTestCore(t)
-	renderer, err := templatex.New(cfg.TemplateRoot)
+	renderer, err := templatex.New(cfg.TemplateRoot())
 	if err != nil {
 		t.Fatalf("new renderer: %v", err)
 	}

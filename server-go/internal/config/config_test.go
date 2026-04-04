@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,7 +10,7 @@ func TestLoadDefaultsAndSecrets(t *testing.T) {
 	t.Setenv("DATA_PATH", filepath.Join(t.TempDir(), "data"))
 	projectRoot := filepath.Clean(filepath.Join("..", ".."))
 
-	cfg, err := Load(context.Background(), projectRoot)
+	cfg, err := Load(projectRoot)
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}
@@ -26,8 +25,8 @@ func TestLoadDefaultsAndSecrets(t *testing.T) {
 		t.Fatalf("expected generated secrets")
 	}
 	wantMigrationDir := filepath.Join(projectRoot, "server-go", "ent", "migrate", "migrations")
-	if cfg.MigrationDir != wantMigrationDir {
-		t.Fatalf("unexpected migration dir: got %s want %s", cfg.MigrationDir, wantMigrationDir)
+	if cfg.MigrationDir() != wantMigrationDir {
+		t.Fatalf("unexpected migration dir: got %s want %s", cfg.MigrationDir(), wantMigrationDir)
 	}
 	if _, err := os.Stat(filepath.Join(cfg.DataPath, ".secrets.edn")); err != nil {
 		t.Fatalf("expected secrets file: %v", err)
@@ -50,7 +49,7 @@ func TestLoadReadsExistingSecret(t *testing.T) {
 	}
 	t.Setenv("DATA_PATH", dataPath)
 
-	cfg, err := Load(context.Background(), filepath.Clean(filepath.Join("..", "..")))
+	cfg, err := Load(filepath.Clean(filepath.Join("..", "..")))
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}

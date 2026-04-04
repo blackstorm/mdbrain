@@ -6,7 +6,6 @@ import (
 	"mime"
 	"os"
 	"path/filepath"
-	"time"
 
 	"mdbrain.dev/internal/config"
 	"mdbrain.dev/internal/domain/store"
@@ -122,8 +121,4 @@ func ReadAll(obj *store.Object) ([]byte, error) {
 	}
 	defer obj.Body.Close()
 	return io.ReadAll(obj.Body)
-}
-
-func modTimePtr(t time.Time) *time.Time {
-	return &t
 }

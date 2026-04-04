@@ -34,14 +34,6 @@ func TestNoteListingSearchAndWikilinks(t *testing.T) {
 		t.Fatalf("unexpected note order: %#v", listed)
 	}
 
-	wikilinks, err := repo.ListNotesWithWikilinksByVault(ctx, vaultID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(wikilinks) != 1 || wikilinks[0].ClientID != "note-a" {
-		t.Fatalf("unexpected wikilink notes: %#v", wikilinks)
-	}
-
 	searched, err := repo.SearchNotesByVault(ctx, vaultID, "beta")
 	if err != nil {
 		t.Fatal(err)
@@ -172,7 +164,7 @@ func TestAssetsRefsAndFindFallback(t *testing.T) {
 		t.Fatalf("unexpected vault storage size: %d", size)
 	}
 
-	if err := repo.UpsertNoteAssetRef(ctx, vaultID, "note-1", "asset-1"); err != nil {
+	if err := repo.UpdateNoteAssetRefs(ctx, vaultID, "note-1", []string{"asset-1"}); err != nil {
 		t.Fatal(err)
 	}
 	count, err := repo.CountAssetRefs(ctx, vaultID, "asset-1")
@@ -194,7 +186,7 @@ func TestAssetsRefsAndFindFallback(t *testing.T) {
 		t.Fatalf("unexpected refs after replace: %#v", refs)
 	}
 
-	if err := repo.DeleteNoteAssetRef(ctx, vaultID, "note-1", "asset-1"); err != nil {
+	if err := repo.DeleteNoteAssetRefsByAsset(ctx, vaultID, "asset-1"); err != nil {
 		t.Fatal(err)
 	}
 	if err := repo.DeleteNoteAssetRefsByAsset(ctx, vaultID, "asset-2"); err != nil {
@@ -254,7 +246,7 @@ func TestVaultMetadataAndCascadeDelete(t *testing.T) {
 	if err := repo.UpsertAsset(ctx, uuid.NewString(), tenantID, vaultID, "asset-1", "img.png", "assets/asset-1.png", 5, "image/png", "md5-a1"); err != nil {
 		t.Fatal(err)
 	}
-	if err := repo.UpsertNoteAssetRef(ctx, vaultID, "note-1", "asset-1"); err != nil {
+	if err := repo.UpdateNoteAssetRefs(ctx, vaultID, "note-1", []string{"asset-1"}); err != nil {
 		t.Fatal(err)
 	}
 	if err := repo.InsertNoteLink(ctx, vaultID, "note-1", "note-1", "n.md", "link", "Self", "[[n]]"); err != nil {

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"crypto/md5"
 	"crypto/rand"
 	"encoding/hex"
@@ -38,24 +37,18 @@ type Config struct {
 	HealthToken   string
 
 	OnDemandTLSEnabled bool
-
-	TemplateRoot string
-	PublicRoot   string
-	MigrationDir string
-	DatabasePath string
 }
 
-func Load(ctx context.Context, projectRoot string) (*Config, error) {
-	_ = ctx
-
+func Load(projectRoot string) (*Config, error) {
 	dataPath := envOr("DATA_PATH", "data")
+	hostFallback := envOr("HOST", "0.0.0.0")
 	cfg := &Config{
 		ProjectRoot:        projectRoot,
 		DataPath:           dataPath,
 		Environment:        envOr("ENVIRONMENT", "development"),
-		AppHost:            envOr("HOST", "0.0.0.0"),
+		AppHost:            envOr("APP_HOST", hostFallback),
 		AppPort:            envIntOr("APP_PORT", 8080),
-		ConsoleHost:        envOr("HOST", "0.0.0.0"),
+		ConsoleHost:        envOr("CONSOLE_HOST", hostFallback),
 		ConsolePort:        envIntOr("CONSOLE_PORT", 9090),
 		StorageType:        strings.ToLower(envOr("STORAGE_TYPE", "local")),
 		LocalStoragePath:   envOr("LOCAL_STORAGE_PATH", filepath.Join(dataPath, "storage")),
@@ -66,10 +59,6 @@ func Load(ctx context.Context, projectRoot string) (*Config, error) {
 		S3Bucket:           envOr("S3_BUCKET", "mdbrain"),
 		S3PublicURL:        os.Getenv("S3_PUBLIC_URL"),
 		OnDemandTLSEnabled: os.Getenv("CADDY_ON_DEMAND_TLS_ENABLED") == "true",
-		TemplateRoot:       filepath.Join(projectRoot, "server", "resources"),
-		PublicRoot:         filepath.Join(projectRoot, "server", "resources", "publics"),
-		MigrationDir:       filepath.Join(projectRoot, "server-go", "ent", "migrate", "migrations"),
-		DatabasePath:       filepath.Join(dataPath, "mdbrain.db"),
 	}
 
 	sessionSecret, err := loadOrCreateSessionSecret(cfg.DataPath)
@@ -119,6 +108,22 @@ func (c *Config) Validate() error {
 
 func (c *Config) Production() bool {
 	return c.Environment == "production"
+}
+
+func (c *Config) TemplateRoot() string {
+	return filepath.Join(c.ProjectRoot, "server", "resources")
+}
+
+func (c *Config) PublicRoot() string {
+	return filepath.Join(c.ProjectRoot, "server", "resources", "publics")
+}
+
+func (c *Config) MigrationDir() string {
+	return filepath.Join(c.ProjectRoot, "server-go", "ent", "migrate", "migrations")
+}
+
+func (c *Config) DatabasePath() string {
+	return filepath.Join(c.DataPath, "mdbrain.db")
 }
 
 func (c *Config) SessionHashKey() []byte {

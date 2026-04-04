@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -112,7 +111,7 @@ func TestLoadRespectsSessionSecretEnvOverride(t *testing.T) {
 	t.Setenv("DATA_PATH", filepath.Join(t.TempDir(), "data"))
 	t.Setenv("SESSION_SECRET", "from-env")
 
-	cfg, err := Load(context.Background(), filepath.Clean(filepath.Join("..", "..")))
+	cfg, err := Load(filepath.Clean(filepath.Join("..", "..")))
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}
@@ -130,7 +129,7 @@ func TestLoadAppliesRuntimeOverrides(t *testing.T) {
 	t.Setenv("STORAGE_TYPE", "local")
 	t.Setenv("CADDY_ON_DEMAND_TLS_ENABLED", "true")
 
-	cfg, err := Load(context.Background(), filepath.Clean(filepath.Join("..", "..")))
+	cfg, err := Load(filepath.Clean(filepath.Join("..", "..")))
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}
@@ -145,11 +144,63 @@ func TestLoadAppliesRuntimeOverrides(t *testing.T) {
 	}
 }
 
+func TestLoadUsesDedicatedAppAndConsoleHosts(t *testing.T) {
+	t.Setenv("DATA_PATH", filepath.Join(t.TempDir(), "data"))
+	t.Setenv("HOST", "fallback.example.com")
+	t.Setenv("APP_HOST", "app.example.com")
+	t.Setenv("CONSOLE_HOST", "console.example.com")
+
+	cfg, err := Load(filepath.Clean(filepath.Join("..", "..")))
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if cfg.AppHost != "app.example.com" {
+		t.Fatalf("unexpected app host: %s", cfg.AppHost)
+	}
+	if cfg.ConsoleHost != "console.example.com" {
+		t.Fatalf("unexpected console host: %s", cfg.ConsoleHost)
+	}
+}
+
+func TestLoadAppHostFallbackChain(t *testing.T) {
+	t.Setenv("DATA_PATH", filepath.Join(t.TempDir(), "data"))
+	t.Setenv("HOST", "fallback.example.com")
+	t.Setenv("CONSOLE_HOST", "console.example.com")
+
+	cfg, err := Load(filepath.Clean(filepath.Join("..", "..")))
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if cfg.AppHost != "fallback.example.com" {
+		t.Fatalf("unexpected app host fallback value: %s", cfg.AppHost)
+	}
+	if cfg.ConsoleHost != "console.example.com" {
+		t.Fatalf("unexpected console host: %s", cfg.ConsoleHost)
+	}
+}
+
+func TestLoadConsoleHostFallbackChain(t *testing.T) {
+	t.Setenv("DATA_PATH", filepath.Join(t.TempDir(), "data"))
+	t.Setenv("HOST", "fallback.example.com")
+	t.Setenv("APP_HOST", "app.example.com")
+
+	cfg, err := Load(filepath.Clean(filepath.Join("..", "..")))
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if cfg.AppHost != "app.example.com" {
+		t.Fatalf("unexpected app host: %s", cfg.AppHost)
+	}
+	if cfg.ConsoleHost != "fallback.example.com" {
+		t.Fatalf("unexpected console host fallback value: %s", cfg.ConsoleHost)
+	}
+}
+
 func TestLoadRejectsInvalidS3Configuration(t *testing.T) {
 	t.Setenv("DATA_PATH", filepath.Join(t.TempDir(), "data"))
 	t.Setenv("STORAGE_TYPE", "s3")
 
-	_, err := Load(context.Background(), filepath.Clean(filepath.Join("..", "..")))
+	_, err := Load(filepath.Clean(filepath.Join("..", "..")))
 	if err == nil || !strings.Contains(err.Error(), "missing S3_ENDPOINT") {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -159,7 +210,7 @@ func TestLoadRespectsLocalStoragePathOverride(t *testing.T) {
 	t.Setenv("DATA_PATH", filepath.Join(t.TempDir(), "data"))
 	t.Setenv("LOCAL_STORAGE_PATH", "/tmp/mdbrain-storage")
 
-	cfg, err := Load(context.Background(), filepath.Clean(filepath.Join("..", "..")))
+	cfg, err := Load(filepath.Clean(filepath.Join("..", "..")))
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}

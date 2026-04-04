@@ -1,8 +1,6 @@
 package middleware
 
 import (
-	"net/http"
-	"net/http/httptest"
 	"testing"
 )
 
@@ -48,28 +46,6 @@ func TestParseHostDomainRejectsInvalidCharacters(t *testing.T) {
 	}
 }
 
-func TestHostErrorResponseBadRequest(t *testing.T) {
-	rec := httptest.NewRecorder()
-	HostErrorResponse(rec, ParsedHost{Error: "invalid"})
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("unexpected status: %d", rec.Code)
-	}
-	if rec.Body.String() != "Bad request" {
-		t.Fatalf("unexpected body: %s", rec.Body.String())
-	}
-}
-
-func TestHostErrorResponseForbiddenForUnbound(t *testing.T) {
-	rec := httptest.NewRecorder()
-	HostErrorResponse(rec, ParsedHost{Error: "unbound"})
-	if rec.Code != http.StatusForbidden {
-		t.Fatalf("unexpected status: %d", rec.Code)
-	}
-	if rec.Body.String() != "Forbidden" {
-		t.Fatalf("unexpected body: %s", rec.Body.String())
-	}
-}
-
 func TestValidPortBoundaries(t *testing.T) {
 	if !validPort("1") || !validPort("65535") {
 		t.Fatal("expected boundary ports to be valid")
@@ -100,13 +76,5 @@ func TestParseHostDomainRejectsSpace(t *testing.T) {
 	got := ParseHostDomain("example .com")
 	if got.Error != "invalid" {
 		t.Fatalf("unexpected parse result: %#v", got)
-	}
-}
-
-func TestHostErrorResponseSetsNoStoreHeader(t *testing.T) {
-	rec := httptest.NewRecorder()
-	HostErrorResponse(rec, ParsedHost{Error: "invalid"})
-	if got := rec.Header().Get("Cache-Control"); got != "no-store" {
-		t.Fatalf("unexpected cache control header: %s", got)
 	}
 }

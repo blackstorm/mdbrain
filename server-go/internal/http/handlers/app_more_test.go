@@ -20,7 +20,7 @@ func setupAppHandlerWithRenderer(t *testing.T) (*AppHandler, *repository.Reposit
 	t.Helper()
 
 	cfg, repo, objectStore := setupTestCore(t)
-	renderer, err := templatex.New(cfg.TemplateRoot)
+	renderer, err := templatex.New(cfg.TemplateRoot())
 	if err != nil {
 		t.Fatalf("new renderer: %v", err)
 	}
