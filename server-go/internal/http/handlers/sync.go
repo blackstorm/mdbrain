@@ -507,15 +507,11 @@ func publishErrorCode(status int) string {
 func publishErrorMessage(body any) string {
 	if m, ok := body.(map[string]any); ok {
 		if value, ok := m["error"].(string); ok && strings.TrimSpace(value) != "" {
-			return truncate(value, 400)
+			if len(value) > 400 {
+				return value[:400]
+			}
+			return value
 		}
 	}
 	return "Request failed"
-}
-
-func truncate(value string, n int) string {
-	if len(value) <= n {
-		return value
-	}
-	return value[:n]
 }

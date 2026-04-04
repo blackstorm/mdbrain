@@ -3,6 +3,8 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"mime/multipart"
 	"net/http"
@@ -292,7 +294,7 @@ func TestUploadVaultLogoRollsBackWhenFaviconStoreFails(t *testing.T) {
 		t.Fatalf("expected success=false, got %#v", payload)
 	}
 
-	logoKey := store.LogoObjectKey(sha256Hex(content, 16), "png")
+	logoKey := store.LogoObjectKey(hashPrefix16(content), "png")
 	faviconKey := store.FaviconObjectKey(logoKey)
 	obj, err := objectStore.GetObject(vaultID, logoKey)
 	if err != nil {
@@ -339,4 +341,9 @@ func newLogoUploadRequest(t *testing.T, method, target, fieldName, fileName stri
 		req.Header.Set("X-Test-Content-Type", contentType)
 	}
 	return req
+}
+
+func hashPrefix16(content []byte) string {
+	sum := sha256.Sum256(content)
+	return hex.EncodeToString(sum[:16])
 }

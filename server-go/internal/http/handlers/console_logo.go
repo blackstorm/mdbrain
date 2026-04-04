@@ -75,8 +75,12 @@ func (h *ConsoleLogoHandler) UploadVaultLogo(c *echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]any{"success": false, "error": "Image too small. Minimum size is 128x128."})
 	}
 
-	extension := map[string]string{"image/png": "png", "image/jpeg": "jpg"}[contentType]
-	contentHash := sha256Hex(content, 16)
+	extension := "jpg"
+	if contentType == "image/png" {
+		extension = "png"
+	}
+	hash := sha256.Sum256(content)
+	contentHash := hex.EncodeToString(hash[:16])
 	logoKey := store.LogoObjectKey(contentHash, extension)
 	faviconBytes, err := generateFavicon(content, contentType)
 	if err != nil {
@@ -196,14 +200,6 @@ func generateFavicon(content []byte, contentType string) ([]byte, error) {
 		err = jpeg.Encode(&buf, dst, &jpeg.Options{Quality: 90})
 	}
 	return buf.Bytes(), err
-}
-
-func sha256Hex(content []byte, length int) string {
-	sum := sha256.Sum256(content)
-	if length > len(sum) {
-		length = len(sum)
-	}
-	return hex.EncodeToString(sum[:length])
 }
 
 func min(a, b int) int {
