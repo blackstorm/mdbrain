@@ -39,8 +39,7 @@ Mdbrain 在容器内提供两个端口：
 - 若 Console 对外开放，请通过防火墙/ACL 或私有网络限制访问。
 - Docker 镜像默认以 `ENVIRONMENT=production` 运行，Console 会话使用 `Secure` Cookie。
   通过纯 HTTP 访问 Console 可能不可靠；建议为 Console 提供 HTTPS 访问方式。
-- Docker 入口脚本会先执行 `./mdbrain-migrate migrate`，然后再启动 Go 服务端二进制 `./mdbrain`。
-- 待执行的版本化迁移来自 `server-go/ent/migrate/migrations`。
+- Go 服务会在启动时确保 SQLite schema 已就绪，然后再开始对外提供服务。
 
 <a id="toc-quick-deploy"></a>
 ## 快速部署（一行命令）

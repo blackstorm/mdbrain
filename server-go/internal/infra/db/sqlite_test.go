@@ -3,14 +3,10 @@ package db
 import (
 	"context"
 	"database/sql"
-	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 	"time"
-
-	atlasmigrate "ariga.io/atlas/sql/migrate"
 
 	"mdbrain.dev/internal/config"
 )
@@ -142,169 +138,54 @@ func TestOpenSQLiteEnablesForeignKeysOnEveryNewConnection(t *testing.T) {
 	}
 }
 
-func TestRunMigrationsAndPendingMigrations(t *testing.T) {
+func TestOpenSQLiteEnsuresApplicationSchema(t *testing.T) {
 	ctx := context.Background()
-	cfg := testConfig(t)
 	db := openManagedTestSQLite(t)
 
-	pending, err := PendingMigrations(ctx, db, cfg.MigrationDir())
-	if err != nil {
-		t.Fatalf("pending migrations before run: %v", err)
-	}
-	if len(pending) == 0 {
-		t.Fatal("expected fresh database to have pending atlas migrations")
-	}
-
-	if err := RunMigrations(ctx, db, cfg.MigrationDir()); err != nil {
-		t.Fatalf("run migrations: %v", err)
-	}
-
-	pending, err = PendingMigrations(ctx, db, cfg.MigrationDir())
-	if err != nil {
-		t.Fatalf("pending migrations after run: %v", err)
-	}
-	if len(pending) != 0 {
-		t.Fatalf("expected no pending migrations after run, got %v", pending)
-	}
-
-	revisions, err := (&sqliteRevisionStore{db: db}).ReadRevisions(ctx)
-	if err != nil {
-		t.Fatalf("read atlas revisions: %v", err)
-	}
-	if len(revisions) == 0 {
-		t.Fatal("expected atlas revisions to be recorded")
+	for _, table := range []string{
+		"tenants",
+		"users",
+		"vaults",
+		"notes",
+		"assets",
+		"note_links",
+		"note_asset_refs",
+	} {
+		var count int
+		if err := db.QueryRowContext(ctx, `
+			SELECT COUNT(*)
+			FROM sqlite_master
+			WHERE type = 'table' AND name = ?
+		`, table).Scan(&count); err != nil {
+			t.Fatalf("check table %s: %v", table, err)
+		}
+		if count != 1 {
+			t.Fatalf("expected table %s to exist once, got %d", table, count)
+		}
 	}
 }
 
-func TestRunMigrationsBaselinesLegacySchemaMigrations(t *testing.T) {
+func TestEnsureSchemaIsIdempotent(t *testing.T) {
 	ctx := context.Background()
-	db := openRawTestSQLite(t)
-	migrationDir := filepath.Join(t.TempDir(), "migrations")
+	db := openManagedTestSQLite(t)
 
-	writeAtlasMigrationDir(t, migrationDir, map[string]string{
-		"20260331090000_initial.sql": `
-CREATE TABLE base (
-  id INTEGER PRIMARY KEY,
-  name TEXT NOT NULL
-);
-`,
-		"20260331100000_add_flag.sql": `
-ALTER TABLE base ADD COLUMN flag INTEGER NOT NULL DEFAULT 0;
-`,
-	})
-
-	if _, err := db.ExecContext(ctx, `
-CREATE TABLE base (
-  id INTEGER PRIMARY KEY,
-  name TEXT NOT NULL
-);
-`); err != nil {
-		t.Fatalf("create legacy base table: %v", err)
-	}
-	if _, err := db.ExecContext(ctx, `
-CREATE TABLE schema_migrations (
-  id BIGINT UNIQUE NOT NULL,
-  applied TIMESTAMP,
-  description VARCHAR(1024)
-);
-`); err != nil {
-		t.Fatalf("create legacy schema_migrations: %v", err)
-	}
-	if _, err := db.ExecContext(ctx, `
-INSERT INTO schema_migrations (id, applied, description)
-VALUES (1, CURRENT_TIMESTAMP, 'initial');
-`); err != nil {
-		t.Fatalf("seed legacy schema_migrations: %v", err)
+	if _, err := db.ExecContext(ctx, `INSERT INTO tenants (id, name) VALUES ('tenant-1', 'Test Org')`); err != nil {
+		t.Fatalf("seed tenant: %v", err)
 	}
 
-	pending, err := PendingMigrations(ctx, db, migrationDir)
-	if err != nil {
-		t.Fatalf("pending migrations with legacy baseline: %v", err)
+	if err := EnsureSchema(ctx, db); err != nil {
+		t.Fatalf("ensure schema first rerun: %v", err)
 	}
-	if len(pending) != 1 || pending[0] != "20260331100000_add_flag.sql" {
-		t.Fatalf("unexpected pending migrations after legacy baseline: %v", pending)
-	}
-
-	if err := RunMigrations(ctx, db, migrationDir); err != nil {
-		t.Fatalf("run migrations with legacy baseline: %v", err)
+	if err := EnsureSchema(ctx, db); err != nil {
+		t.Fatalf("ensure schema second rerun: %v", err)
 	}
 
-	var hasFlag int
-	rows, err := db.QueryContext(ctx, `PRAGMA table_info(base)`)
-	if err != nil {
-		t.Fatalf("inspect base columns: %v", err)
+	var count int
+	if err := db.QueryRowContext(ctx, `SELECT COUNT(*) FROM tenants`).Scan(&count); err != nil {
+		t.Fatalf("count tenants after ensure schema reruns: %v", err)
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var (
-			cid        int
-			name       string
-			typ        string
-			notNull    int
-			defaultVal sql.NullString
-			pk         int
-		)
-		if err := rows.Scan(&cid, &name, &typ, &notNull, &defaultVal, &pk); err != nil {
-			t.Fatalf("scan column info: %v", err)
-		}
-		if name == "flag" {
-			hasFlag++
-		}
-	}
-	if err := rows.Err(); err != nil {
-		t.Fatalf("iterate base columns: %v", err)
-	}
-	if hasFlag != 1 {
-		t.Fatalf("expected migrated flag column, got %d matches", hasFlag)
-	}
-
-	revisions, err := (&sqliteRevisionStore{db: db}).ReadRevisions(ctx)
-	if err != nil {
-		t.Fatalf("read atlas revisions after baseline: %v", err)
-	}
-	if len(revisions) != 2 {
-		t.Fatalf("unexpected atlas revision count after baseline: %d", len(revisions))
-	}
-	if revisions[0].Type != atlasmigrate.RevisionTypeBaseline {
-		t.Fatalf("expected first atlas revision to be a baseline, got %v", revisions[0].Type)
-	}
-}
-
-func TestCreateMigrationFromEntSchema(t *testing.T) {
-	ctx := context.Background()
-	cfg := testConfig(t)
-	cfg.ProjectRoot = t.TempDir()
-
-	created, err := CreateMigration(ctx, cfg, " Initial Schema ")
-	if err != nil {
-		t.Fatalf("create initial migration: %v", err)
-	}
-	if len(created) != 2 {
-		t.Fatalf("unexpected created entries: %v", created)
-	}
-
-	var (
-		hasSQL bool
-		hasSum bool
-	)
-	for _, name := range created {
-		switch {
-		case strings.HasSuffix(name, ".sql"):
-			hasSQL = true
-		case name == atlasmigrate.HashFileName:
-			hasSum = true
-		}
-	}
-	if !hasSQL || !hasSum {
-		t.Fatalf("expected migration sql file and atlas.sum, got %v", created)
-	}
-
-	created, err = CreateMigration(ctx, cfg, "No Changes")
-	if err != nil {
-		t.Fatalf("create no-op migration: %v", err)
-	}
-	if len(created) != 0 {
-		t.Fatalf("expected no files when schema is unchanged, got %v", created)
+	if count != 1 {
+		t.Fatalf("expected tenant row to survive ensure schema reruns, got %d", count)
 	}
 }
 
@@ -318,54 +199,6 @@ func openManagedTestSQLite(t *testing.T) *sql.DB {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 	return db
-}
-
-func openRawTestSQLite(t *testing.T) *sql.DB {
-	t.Helper()
-
-	dbPath := filepath.Join(t.TempDir(), "test.db")
-	dsn, err := sqliteDSN(dbPath)
-	if err != nil {
-		t.Fatalf("build sqlite dsn: %v", err)
-	}
-
-	db, err := sql.Open("sqlite", dsn)
-	if err != nil {
-		t.Fatalf("open raw sqlite: %v", err)
-	}
-	db.SetMaxOpenConns(sqliteMaxOpenConns)
-	db.SetMaxIdleConns(sqliteMaxOpenConns)
-	if err := db.PingContext(context.Background()); err != nil {
-		t.Fatalf("ping raw sqlite: %v", err)
-	}
-	t.Cleanup(func() { _ = db.Close() })
-	return db
-}
-
-func writeAtlasMigrationDir(t *testing.T, dir string, files map[string]string) {
-	t.Helper()
-
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		t.Fatalf("create migration dir: %v", err)
-	}
-	localDir, err := atlasmigrate.NewLocalDir(dir)
-	if err != nil {
-		t.Fatalf("open atlas migration dir: %v", err)
-	}
-
-	for name, content := range files {
-		if err := localDir.WriteFile(name, []byte(strings.TrimSpace(content)+"\n")); err != nil {
-			t.Fatalf("write migration file %s: %v", name, err)
-		}
-	}
-
-	sum, err := localDir.Checksum()
-	if err != nil {
-		t.Fatalf("compute atlas checksum: %v", err)
-	}
-	if err := atlasmigrate.WriteSumFile(localDir, sum); err != nil {
-		t.Fatalf("write atlas.sum: %v", err)
-	}
 }
 
 func testConfig(t *testing.T) *config.Config {

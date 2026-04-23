@@ -329,9 +329,6 @@ func setupMiddlewareRepo(t *testing.T) *repository.Repository {
 		t.Fatalf("open db: %v", err)
 	}
 	t.Cleanup(func() { _ = sqlDB.Close() })
-	if err := db.RunMigrations(context.Background(), sqlDB, cfg.MigrationDir()); err != nil {
-		t.Fatalf("run migration: %v", err)
-	}
 	return repository.New(sqlDB)
 }
 

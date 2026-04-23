@@ -28,9 +28,6 @@ func setupRepository(t *testing.T) *Repository {
 		t.Fatalf("open db: %v", err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	if err := dbinfra.RunMigrations(context.Background(), db, cfg.MigrationDir()); err != nil {
-		t.Fatalf("migrate db: %v", err)
-	}
 	return New(db)
 }
 

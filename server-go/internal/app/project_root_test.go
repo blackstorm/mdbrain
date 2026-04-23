@@ -14,7 +14,7 @@ func TestDetectProjectRootWalksUpFromNestedDir(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.Chdir(originalWD) })
 
-	nestedDir := filepath.Join(projectRootRepoRoot(t), "server-go", "cmd", "mdbrain-migrate")
+	nestedDir := filepath.Join(projectRootRepoRoot(t), "server-go", "cmd", "mdbrain")
 	if err := os.Chdir(nestedDir); err != nil {
 		t.Fatalf("change working directory: %v", err)
 	}

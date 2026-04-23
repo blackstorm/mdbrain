@@ -118,10 +118,6 @@ func (c *Config) PublicRoot() string {
 	return filepath.Join(c.ProjectRoot, "server", "resources", "publics")
 }
 
-func (c *Config) MigrationDir() string {
-	return filepath.Join(c.ProjectRoot, "server-go", "ent", "migrate", "migrations")
-}
-
 func (c *Config) DatabasePath() string {
 	return filepath.Join(c.DataPath, "mdbrain.db")
 }

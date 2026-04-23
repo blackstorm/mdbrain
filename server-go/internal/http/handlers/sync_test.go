@@ -35,9 +35,6 @@ func setupSyncHandler(t *testing.T) (*SyncHandler, *repository.Repository, strin
 		t.Fatalf("open db: %v", err)
 	}
 	t.Cleanup(func() { _ = sqlDB.Close() })
-	if err := db.RunMigrations(context.Background(), sqlDB, cfg.MigrationDir()); err != nil {
-		t.Fatalf("run migration: %v", err)
-	}
 
 	repo := repository.New(sqlDB)
 	objectStore, err := storage.NewLocalStore(cfg.LocalStoragePath)

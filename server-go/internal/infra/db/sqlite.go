@@ -41,6 +41,10 @@ func OpenSQLite(ctx context.Context, cfg *config.Config) (*sql.DB, error) {
 		_ = db.Close()
 		return nil, err
 	}
+	if err := EnsureSchema(ctx, db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	return db, nil
 }
 

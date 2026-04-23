@@ -4,7 +4,7 @@
 	dev backend-dev backend-repl assets-dev plugin-dev \
 	build backend-build assets-build plugin-build plugin-package \
 	test backend-test plugin-test \
-	db-migrate db-pending db-create-migration db-reset \
+	db-reset \
 	clean
 
 APP_PORT ?= 8080
@@ -34,10 +34,7 @@ help:
 	@echo "  make plugin-test                   Run plugin tests (pnpm test)"
 	@echo ""
 	@echo "Database:"
-	@echo "  make db-migrate                    Run migrations"
-	@echo "  make db-pending                    List pending migrations"
-	@echo "  make db-create-migration NAME=xxx  Generate a new versioned migration from ent schema"
-	@echo "  make db-reset                      Delete local DB and rerun migrations"
+	@echo "  make db-reset                      Delete local DB; schema is recreated on next start"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make install                       Install backend + assets + plugin dependencies"
@@ -66,7 +63,6 @@ dev:
 	@echo "App Port: $(APP_PORT), Console Port: $(CONSOLE_PORT)"
 	@echo "Data Path: $(BACKEND_DATA_PATH)"
 	@echo "Use Ctrl+C to stop all processes"
-	@cd server-go && DATA_PATH=$(BACKEND_DATA_PATH) go run ./cmd/mdbrain-migrate migrate
 	@set -e; \
 	( cd server-go && DATA_PATH=$(BACKEND_DATA_PATH) APP_PORT=$(APP_PORT) CONSOLE_PORT=$(CONSOLE_PORT) go run ./cmd/mdbrain ) & \
 	BACKEND_PID=$$!; \
@@ -81,7 +77,6 @@ backend-dev:
 	@echo "Starting backend development server..."
 	@echo "App Port: $(APP_PORT), Console Port: $(CONSOLE_PORT)"
 	@echo "Data Path: $(BACKEND_DATA_PATH)"
-	@cd server-go && DATA_PATH=$(BACKEND_DATA_PATH) go run ./cmd/mdbrain-migrate migrate
 	@cd server-go && DATA_PATH=$(BACKEND_DATA_PATH) APP_PORT=$(APP_PORT) CONSOLE_PORT=$(CONSOLE_PORT) go run ./cmd/mdbrain
 
 backend-repl:
@@ -99,13 +94,10 @@ plugin-dev:
 build: backend-build assets-build plugin-build
 
 backend-build:
-	@echo "Building backend binaries..."
+	@echo "Building backend binary..."
 	@mkdir -p server-go/target
 	@cd server-go && go build -o ./target/mdbrain ./cmd/mdbrain
-	@cd server-go && go build -o ./target/mdbrain-migrate ./cmd/mdbrain-migrate
-	@echo "Backend built:"
-	@echo "  - server-go/target/mdbrain"
-	@echo "  - server-go/target/mdbrain-migrate"
+	@echo "Backend built: server-go/target/mdbrain"
 
 assets-build:
 	@echo "Building Tailwind CSS..."
@@ -134,25 +126,10 @@ plugin-test:
 	@echo "Running plugin tests..."
 	@cd obsidian-plugin && pnpm test
 
-# Database
-db-migrate:
-	@echo "Running database migrations..."
-	@cd server-go && DATA_PATH=$(BACKEND_DATA_PATH) go run ./cmd/mdbrain-migrate migrate
-
 db-reset:
 	@echo "Resetting database..."
 	@rm -f $(BACKEND_DATA_PATH)/mdbrain.db $(BACKEND_DATA_PATH)/.secrets.edn $(BACKEND_DATA_PATH)/.health-token
-	@cd server-go && DATA_PATH=$(BACKEND_DATA_PATH) go run ./cmd/mdbrain-migrate migrate
 	@echo "Database reset complete"
-
-db-pending:
-	@echo "Checking pending migrations..."
-	@cd server-go && DATA_PATH=$(BACKEND_DATA_PATH) go run ./cmd/mdbrain-migrate pending
-
-db-create-migration:
-	@echo "Generating versioned migration from ent schema..."
-	@test -n "$(NAME)" || (echo "Usage: make db-create-migration NAME=your_migration_name" && exit 1)
-	@cd server-go && DATA_PATH=$(BACKEND_DATA_PATH) go run ./cmd/mdbrain-migrate create "$(NAME)"
 
 clean:
 	@echo "Cleaning build artifacts..."

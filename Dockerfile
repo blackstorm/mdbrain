@@ -12,8 +12,7 @@ COPY server-go/go.mod server-go/go.sum ./
 RUN go mod download
 COPY server-go ./
 RUN mkdir -p /out && \
-	CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/mdbrain ./cmd/mdbrain && \
-	CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/mdbrain-migrate ./cmd/mdbrain-migrate
+	CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/mdbrain ./cmd/mdbrain
 
 # Stage 3: Runtime
 FROM debian:bookworm-slim
@@ -28,12 +27,10 @@ RUN set -eux; \
     chown -R mdbrain:mdbrain /app
 
 COPY --from=backend-builder --chown=mdbrain:mdbrain /out/mdbrain ./mdbrain
-COPY --from=backend-builder --chown=mdbrain:mdbrain /out/mdbrain-migrate ./mdbrain-migrate
-COPY --from=backend-builder --chown=mdbrain:mdbrain /app/server-go/ent/migrate/migrations ./server-go/ent/migrate/migrations
 COPY --from=app-builder --chown=mdbrain:mdbrain /app/server/resources ./server/resources
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 COPY docker-healthcheck.sh ./healthcheck.sh
-RUN chmod +x ./mdbrain ./mdbrain-migrate ./docker-entrypoint.sh ./healthcheck.sh
+RUN chmod +x ./mdbrain ./docker-entrypoint.sh ./healthcheck.sh
 
 USER mdbrain
 
