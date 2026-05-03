@@ -35,6 +35,10 @@ func ExtractLinks(content string) []Link {
 	matches := linkPattern.FindAllStringSubmatch(content, -1)
 	out := make([]Link, 0, len(matches))
 	for _, match := range matches {
+		linkType := "link"
+		if match[1] == "!" {
+			linkType = "embed"
+		}
 		inner := match[2]
 		pathAnchorParts := strings.SplitN(inner, "|", 2)
 		pathAnchor := strings.TrimSpace(pathAnchorParts[0])
@@ -53,7 +57,7 @@ func ExtractLinks(content string) []Link {
 			Path:     strings.TrimSpace(path),
 			Display:  display,
 			Anchor:   anchor,
-			LinkType: map[bool]string{true: "embed", false: "link"}[match[1] == "!"],
+			LinkType: linkType,
 		})
 	}
 	return out

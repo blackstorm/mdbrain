@@ -67,6 +67,10 @@ func (r *Renderer) MdToHTML(content string) string {
 
 func ParseObsidianLink(link string) ParsedObsidianLink {
 	embed := strings.HasPrefix(link, "!")
+	linkType := "link"
+	if embed {
+		linkType = "embed"
+	}
 	inner := strings.TrimPrefix(link, "!")
 	inner = strings.TrimPrefix(inner, "[[")
 	inner = strings.TrimSuffix(inner, "]]")
@@ -83,7 +87,7 @@ func ParseObsidianLink(link string) ParsedObsidianLink {
 		anchor = parts[1]
 	}
 	return ParsedObsidianLink{
-		Type:    map[bool]string{true: "embed", false: "link"}[embed],
+		Type:    linkType,
 		Embed:   embed,
 		Path:    strings.TrimSpace(path),
 		Display: strings.TrimSpace(display),
@@ -238,6 +242,7 @@ func (r *Renderer) RenderMarkdown(content, vaultID string, links []StoredLink) s
 
 func (r *Renderer) rewriteAssetLinks(content, vaultID string) string {
 	masked, segments := maskCode(content)
+	destinations := extractReferenceDefinitions(masked)
 	result := inlineImageRe.ReplaceAllStringFunc(masked, func(match string) string {
 		parts := inlineImageRe.FindStringSubmatch(match)
 		dest, rest := splitLinkDestination(parts[2])
@@ -249,8 +254,7 @@ func (r *Renderer) rewriteAssetLinks(content, vaultID string) string {
 	})
 	result = referenceImageRe.ReplaceAllStringFunc(result, func(match string) string {
 		parts := referenceImageRe.FindStringSubmatch(match)
-		destinitions := extractReferenceDefinitions(result)
-		destination := normalizeAssetPath(destinitions[normalizeReferenceLabel(or(parts[2], parts[1]))])
+		destination := destinations[normalizeReferenceLabel(coalesce(parts[2], parts[1]))]
 		if assetEmbed(destination) {
 			return fmt.Sprintf("![%s](%s)", parts[1], r.assetURLFor(vaultID, destination))
 		}
@@ -267,7 +271,7 @@ func (r *Renderer) rewriteAssetLinks(content, vaultID string) string {
 	})
 	result = htmlMediaTagRe.ReplaceAllStringFunc(result, func(tag string) string {
 		matches := htmlSrcRe.FindStringSubmatch(tag)
-		raw := firstNonEmpty(matches[1], matches[2], matches[3])
+		raw := coalesce(matches[1], matches[2], matches[3])
 		normalized := normalizeAssetPath(raw)
 		if assetEmbed(normalized) {
 			return htmlSrcRe.ReplaceAllString(tag, `src="`+r.assetURLFor(vaultID, normalized)+`"`)
@@ -396,20 +400,13 @@ func normalizeReferenceLabel(label string) string {
 	return strings.Join(strings.Fields(strings.ToLower(strings.TrimSpace(label))), " ")
 }
 
-func firstNonEmpty(values ...string) string {
+func coalesce(values ...string) string {
 	for _, value := range values {
 		if value != "" {
 			return value
 		}
 	}
 	return ""
-}
-
-func or(value, fallback string) string {
-	if value == "" {
-		return fallback
-	}
-	return value
 }
 
 var (

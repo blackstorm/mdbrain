@@ -189,21 +189,21 @@ func TestNormalizeReferenceLabelCollapsesWhitespace(t *testing.T) {
 	}
 }
 
-func TestFirstNonEmptyReturnsFirstValue(t *testing.T) {
-	if got := firstNonEmpty("", "a", "b"); got != "a" {
-		t.Fatalf("unexpected first non-empty markdown value: %q", got)
+func TestCoalesceReturnsFirstValue(t *testing.T) {
+	if got := coalesce("", "a", "b"); got != "a" {
+		t.Fatalf("unexpected coalesced markdown value: %q", got)
 	}
 }
 
-func TestOrReturnsFallbackWhenEmpty(t *testing.T) {
-	if got := or("", "fallback"); got != "fallback" {
-		t.Fatalf("unexpected or result: %q", got)
+func TestCoalesceReturnsFallbackWhenEmpty(t *testing.T) {
+	if got := coalesce("", "fallback"); got != "fallback" {
+		t.Fatalf("unexpected coalesced markdown value: %q", got)
 	}
 }
 
-func TestOrReturnsValueWhenPresent(t *testing.T) {
-	if got := or("value", "fallback"); got != "value" {
-		t.Fatalf("unexpected or result: %q", got)
+func TestCoalesceReturnsValueWhenPresent(t *testing.T) {
+	if got := coalesce("value", "fallback"); got != "value" {
+		t.Fatalf("unexpected coalesced markdown value: %q", got)
 	}
 }
 

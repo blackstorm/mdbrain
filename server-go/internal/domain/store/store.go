@@ -2,6 +2,7 @@ package store
 
 import (
 	"io"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -33,27 +34,20 @@ func VaultPrefix(vaultID string) string {
 	return strings.ReplaceAll(vaultID, "-", "") + "/"
 }
 
-func NormalizePath(path string) string {
-	if path == "" {
+func NormalizePath(value string) string {
+	if value == "" {
 		return ""
 	}
-	path = strings.ReplaceAll(path, "\\", "/")
-	path = strings.TrimPrefix(path, "/")
-	parts := strings.Split(path, "/")
-	stack := make([]string, 0, len(parts))
-	for _, part := range parts {
-		switch {
-		case part == "", part == ".":
-			continue
-		case part == "..":
-			if len(stack) > 0 {
-				stack = stack[:len(stack)-1]
-			}
-		default:
-			stack = append(stack, part)
-		}
+	value = strings.ReplaceAll(value, "\\", "/")
+	value = path.Clean(strings.TrimLeft(value, "/"))
+	for value == ".." || strings.HasPrefix(value, "../") {
+		value = strings.TrimPrefix(value, "..")
+		value = strings.TrimPrefix(value, "/")
 	}
-	return strings.Join(stack, "/")
+	if value == "." {
+		return ""
+	}
+	return value
 }
 
 func ExtensionFromPath(path string) string {
@@ -91,6 +85,6 @@ func FaviconObjectKey(logoObjectKey string) string {
 	if ext == "" {
 		return ""
 	}
-	base := strings.TrimSuffix(logoObjectKey, "."+ext)
+	base := strings.TrimSuffix(logoObjectKey, path.Ext(logoObjectKey))
 	return base + ".favicon." + ext
 }
