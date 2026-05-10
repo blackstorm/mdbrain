@@ -2,8 +2,8 @@
 	help \
 	install backend-install assets-install plugin-install \
 	dev backend-dev backend-repl assets-dev plugin-dev \
-	build backend-build assets-build plugin-build plugin-package \
-	test backend-test plugin-test \
+	build backend-build dotnet-build assets-build plugin-build plugin-package \
+	test backend-test dotnet-test plugin-test \
 	db-reset \
 	clean
 
@@ -24,6 +24,7 @@ help:
 	@echo "Build:"
 	@echo "  make build                         Build backend + CSS + plugin"
 	@echo "  make backend-build                 Build backend binaries"
+	@echo "  make dotnet-build                  Build experimental .NET backend"
 	@echo "  make assets-build                  Build Tailwind CSS (console + app)"
 	@echo "  make plugin-build                  Build Obsidian plugin to dist/"
 	@echo "  make plugin-package                Package plugin zip (mdbrain-plugin.zip)"
@@ -31,6 +32,7 @@ help:
 	@echo "Test:"
 	@echo "  make test                          Run backend + plugin tests"
 	@echo "  make backend-test                  Run backend tests (go test ./...)"
+	@echo "  make dotnet-test                   Run experimental .NET backend tests"
 	@echo "  make plugin-test                   Run plugin tests (pnpm test)"
 	@echo ""
 	@echo "Database:"
@@ -99,6 +101,11 @@ backend-build:
 	@cd server-go && go build -o ./target/mdbrain ./cmd/mdbrain
 	@echo "Backend built: server-go/target/mdbrain"
 
+dotnet-build:
+	@echo "Building experimental .NET backend..."
+	@mise exec dotnet@10.0.203 -- dotnet build server-dotnet/src/Mdbrain/Mdbrain.csproj --no-restore
+	@mise exec dotnet@10.0.203 -- dotnet build server-dotnet/tests/Mdbrain.Tests/Mdbrain.Tests.csproj --no-restore
+
 assets-build:
 	@echo "Building Tailwind CSS..."
 	@cd server && npm run build
@@ -122,6 +129,11 @@ backend-test:
 	@echo "Running backend tests..."
 	@cd server-go && go test ./...
 
+dotnet-test:
+	@echo "Running experimental .NET backend tests..."
+	@mise exec dotnet@10.0.203 -- dotnet build server-dotnet/tests/Mdbrain.Tests/Mdbrain.Tests.csproj --no-restore
+	@mise exec dotnet@10.0.203 -- dotnet server-dotnet/tests/Mdbrain.Tests/bin/Debug/net10.0/Mdbrain.Tests.dll
+
 plugin-test:
 	@echo "Running plugin tests..."
 	@cd obsidian-plugin && pnpm test
@@ -136,6 +148,9 @@ clean:
 	@rm -rf server/target/
 	@rm -rf server/.cpcache/
 	@rm -rf server-go/target/
+	@rm -rf server-dotnet/**/bin/
+	@rm -rf server-dotnet/**/obj/
+	@rm -rf server-dotnet/.testdata/
 	@rm -rf obsidian-plugin/dist/
 	@rm -f obsidian-plugin/main.js
 	@rm -f obsidian-plugin/main.js.map

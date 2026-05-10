@@ -27,6 +27,11 @@ obsidian-plugin/node_modules/
 # Build artifacts
 target/
 cover.out
+bin/
+obj/
+server-dotnet/**/bin/
+server-dotnet/**/obj/
+server-dotnet/.testdata/
 
 # Shadow-cljs
 .shadow-cljs/
