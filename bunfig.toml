@@ -1,0 +1,3 @@
+[install]
+linkWorkspacePackages = true
+saveTextLockfile = true

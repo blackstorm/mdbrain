@@ -13,7 +13,6 @@
 - [环境变量](#toc-environment-variables)
   - [Compose 变量](#toc-compose-vars)
   - [Mdbrain 服务端变量](#toc-server-vars)
-  - [Docker 运行时变量](#toc-docker-runtime-vars)
   - [Compose 默认会设置的变量](#toc-compose-defaults)
 - [快速开始（推荐：Caddy）](#toc-quickstart-caddy)
 - [Minimal 模式（不含 Caddy）](#toc-minimal)
@@ -111,7 +110,6 @@ Compose 会从 `selfhosted/.env` 读取环境变量（参考 `selfhosted/.env.ex
 | `S3_BUCKET` | S3 Bucket 名称 | `mdbrain` | 否 |
 | `S3_PUBLIC_URL` | 浏览器加载资源的 base URL | - | 是（S3） |
 | `CADDY_ON_DEMAND_TLS_ENABLED` | 为 Caddy 按需 TLS 启用 `/console/domain-check` | `false` | 否 |
-| `MDBRAIN_LOG_LEVEL` | 应用日志级别（Logback） | `INFO`（Docker 镜像） | 否 |
 
 说明：
 
@@ -119,13 +117,7 @@ Compose 会从 `selfhosted/.env` 读取环境变量（参考 `selfhosted/.env.ex
 - 如果未设置 `SESSION_SECRET`，Mdbrain 会自动生成，并保存在 `${DATA_PATH}/.secrets.edn` 中。
 - Docker 镜像默认以 `ENVIRONMENT=production` 运行（Console 的安全 Cookie 默认开启）。
   若通过纯 HTTP 访问 Console，登录可能不可靠；建议为 Console 提供 HTTPS 访问方式。
-
-<a id="toc-docker-runtime-vars"></a>
-### Docker 运行时变量
-
-| 变量名 | 说明 | 默认值 | 必填 |
-|---|---|---|---|
-| `JAVA_OPTS` | 容器的 JVM 参数 | 空 | 否 |
+- Mdbrain 默认假设 S3 Bucket 已经存在。仓库内置的 `compose/docker-compose.s3.yml` 会在 Mdbrain 启动前自动创建 RustFS Bucket。
 
 <a id="toc-compose-defaults"></a>
 ### Compose 默认会设置的变量
@@ -137,6 +129,7 @@ Compose 会从 `selfhosted/.env` 读取环境变量（参考 `selfhosted/.env.ex
 - `compose/docker-compose.s3.yml`
   - `STORAGE_TYPE=s3`
   - `S3_ENDPOINT=http://rustfs:9000`（也可以改成你自己的 S3 Endpoint）
+  - 会在 Mdbrain 启动前自动创建 `${S3_BUCKET}` 对应的 RustFS Bucket
 
 对应的 compose 文件为：
 
@@ -201,6 +194,7 @@ docker compose --env-file selfhosted/.env -f selfhosted/compose/docker-compose.m
 
 - `S3_PUBLIC_URL` 必须能被浏览器直接访问（建议使用 TLS 或 CDN）。
 - 如果你不希望暴露 RustFS，请使用你自己的 S3 + CDN，并把 `S3_PUBLIC_URL` 设置为 CDN 的 base URL。
+- 这个 compose 会自动初始化 RustFS Bucket。如果你改用外部 S3 服务，需要先手动创建 Bucket。
 
 启动：
 

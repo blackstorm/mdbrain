@@ -26,6 +26,8 @@ obsidian-plugin/node_modules/
 
 # Build artifacts
 target/
+apps/**/dist/
+packages/**/dist/
 
 # Shadow-cljs
 .shadow-cljs/

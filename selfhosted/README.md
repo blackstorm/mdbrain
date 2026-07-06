@@ -13,7 +13,6 @@ This directory provides production-ready Docker Compose setups.
 - [Environment variables](#toc-environment-variables)
   - [Compose variables](#toc-compose-vars)
   - [Mdbrain server variables](#toc-server-vars)
-  - [Docker runtime variables](#toc-docker-runtime-vars)
   - [What Compose sets by default](#toc-compose-defaults)
 - [Quickstart (recommended: Caddy)](#toc-quickstart-caddy)
 - [Minimal mode (no Caddy)](#toc-minimal)
@@ -111,7 +110,6 @@ For a short overview table, see [../README.md](../README.md#toc-configuration).
 | `S3_BUCKET` | S3 bucket name | `mdbrain` | No |
 | `S3_PUBLIC_URL` | Public base URL for browsers to fetch assets | - | Yes (S3) |
 | `CADDY_ON_DEMAND_TLS_ENABLED` | Enable `/console/domain-check` for Caddy on-demand TLS | `false` | No |
-| `MDBRAIN_LOG_LEVEL` | App log level (Logback) | `INFO` (Docker image) | No |
 
 Notes:
 
@@ -119,13 +117,7 @@ Notes:
 - If `SESSION_SECRET` is omitted, Mdbrain generates one and stores it in `${DATA_PATH}/.secrets.edn`.
 - The Docker image runs in `ENVIRONMENT=production` by default (secure cookies enabled for Console sessions).
   If you access Console over plain HTTP, login can be unreliable; prefer HTTPS access for Console.
-
-<a id="toc-docker-runtime-vars"></a>
-### Docker runtime variables
-
-| Name | Description | Default | Required |
-|---|---|---|---|
-| `JAVA_OPTS` | Extra JVM args for the container | empty | No |
+- Mdbrain expects the S3 bucket to already exist. The bundled `compose/docker-compose.s3.yml` creates the RustFS bucket automatically before Mdbrain starts.
 
 <a id="toc-compose-defaults"></a>
 ### What Compose sets by default
@@ -137,6 +129,7 @@ The provided compose files already set key Mdbrain variables:
 - `compose/docker-compose.s3.yml`
   - `STORAGE_TYPE=s3`
   - `S3_ENDPOINT=http://rustfs:9000` (or change it to your own S3 endpoint)
+  - Creates `${S3_BUCKET}` in RustFS before Mdbrain starts
  
 These correspond to:
 
@@ -201,6 +194,7 @@ This mode includes a bundled S3-compatible storage service (RustFS). RustFS is e
 
 - `S3_PUBLIC_URL` must be reachable by browsers (recommended to put it behind TLS/CDN).
 - If you do not want to expose RustFS publicly, use your own S3 + CDN and set `S3_PUBLIC_URL` to the CDN base URL.
+- The compose stack initializes the RustFS bucket automatically. If you point Mdbrain at an external S3 service instead, create the bucket yourself first.
 
 Start:
 

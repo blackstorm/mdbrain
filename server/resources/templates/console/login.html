@@ -60,7 +60,7 @@
                     if (response.success) {
                         event.detail.target.innerHTML = `
                             <div class="alert alert-success">
-                                {{ lucide_icon("check-circle", "icon-sm") }}
+                                {{ lucide_icon("circle-check", "icon-sm") }}
                                 <span>Login successful, redirecting...</span>
                             </div>
                         `;
@@ -68,7 +68,7 @@
                     } else {
                         event.detail.target.innerHTML = `
                             <div class="alert alert-error">
-                                {{ lucide_icon("alert-circle", "icon-sm") }}
+                                {{ lucide_icon("circle-alert", "icon-sm") }}
                                 <span>${response.error || 'Login failed'}</span>
                             </div>
                         `;
@@ -76,7 +76,7 @@
                 } catch (e) {
                     event.detail.target.innerHTML = `
                         <div class="alert alert-error">
-                            {{ lucide_icon("alert-circle", "icon-sm") }}
+                            {{ lucide_icon("circle-alert", "icon-sm") }}
                             <span>Server response error</span>
                         </div>
                     `;
@@ -84,7 +84,7 @@
             } else {
                 event.detail.target.innerHTML = `
                     <div class="alert alert-error">
-                        {{ lucide_icon("alert-circle", "icon-sm") }}
+                        {{ lucide_icon("circle-alert", "icon-sm") }}
                         <span>Network error, please try again</span>
                     </div>
                 `;

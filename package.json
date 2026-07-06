@@ -1,0 +1,19 @@
+{
+  "name": "mdbrain-workspace",
+  "private": true,
+  "packageManager": "bun@1.3.14",
+  "workspaces": [
+    "server",
+    "apps/*",
+    "packages/*",
+    "obsidian-plugin"
+  ],
+  "scripts": {
+    "dev:web": "bun --watch run apps/web/src/index.tsx",
+    "build:web": "bun run --cwd apps/web build",
+    "test:web": "bun test apps/web packages",
+    "dev:plugin": "bun run --cwd obsidian-plugin dev",
+    "build:plugin": "bun run --cwd obsidian-plugin build",
+    "test:plugin": "bun run --cwd obsidian-plugin test"
+  }
+}

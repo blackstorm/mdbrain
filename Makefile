@@ -1,6 +1,6 @@
 .PHONY: \
 	help \
-	install backend-install assets-install plugin-install \
+	install workspace-install backend-install assets-install plugin-install \
 	dev backend-dev backend-repl assets-dev plugin-dev \
 	build backend-build assets-build plugin-build plugin-package \
 	test backend-test plugin-test \
@@ -11,22 +11,25 @@ help:
 	@echo "Mdbrain - Developer commands"
 	@echo ""
 	@echo "Development:"
-	@echo "  make dev                           Start backend + app/console watch (APP_PORT/CONSOLE_PORT)"
+	@echo "  make dev                           Start Bun web server in watch mode + asset watch (APP_PORT/CONSOLE_PORT)"
+	@echo "  make web-dev                       Start Bun web server in watch mode (console + public app + sync)"
 	@echo "  make backend-repl                  Start backend REPL (no server)"
 	@echo "  make assets-dev                    Watch and rebuild Tailwind CSS (console + app)"
 	@echo "  make plugin-dev                    Watch Obsidian plugin (vaults/test)"
 	@echo ""
 	@echo "Build:"
-	@echo "  make build                         Build backend + CSS + plugin"
+	@echo "  make build                         Build Bun web app + CSS + plugin"
+	@echo "  make web-build                     Build Bun web app"
 	@echo "  make backend-build                 Build backend uberjar"
 	@echo "  make assets-build                  Build Tailwind CSS (console + app)"
 	@echo "  make plugin-build                  Build Obsidian plugin to dist/"
 	@echo "  make plugin-package                Package plugin zip (mdbrain-plugin.zip)"
 	@echo ""
 	@echo "Test:"
-	@echo "  make test                          Run backend + plugin tests"
+	@echo "  make test                          Run Bun web + plugin tests"
+	@echo "  make web-test                      Run Bun web/package tests"
 	@echo "  make backend-test                  Run backend tests (clojure -M:test)"
-	@echo "  make plugin-test                   Run plugin tests (pnpm test)"
+	@echo "  make plugin-test                   Run plugin tests (bunx vitest)"
 	@echo ""
 	@echo "Database:"
 	@echo "  make db-migrate                    Run migrations (migratus)"
@@ -35,14 +38,14 @@ help:
 	@echo "  make db-reset                      Delete local DB and rerun migrations"
 	@echo ""
 	@echo "Maintenance:"
-	@echo "  make install                       Install backend + assets + plugin dependencies"
+	@echo "  make install                       Install Bun workspace dependencies"
 	@echo "  make clean                         Remove build outputs"
-	@echo ""
-	@echo "Notes:"
-	@echo "  - Plugin tasks require pnpm (Node.js 25 does not ship Corepack)."
-	@echo "    Install: npm install -g pnpm@10.17.1"
 
-install: backend-install assets-install plugin-install
+install: workspace-install
+
+workspace-install:
+	@echo "Installing root Bun workspace dependencies..."
+	@bun install
 
 backend-install:
 	@echo "Installing backend dependencies..."
@@ -50,29 +53,30 @@ backend-install:
 
 assets-install:
 	@echo "Installing Tailwind CSS dependencies..."
-	@cd server && npm install
+	@bun install --cwd server
 
 plugin-install:
 	@echo "Installing plugin dependencies..."
-	@cd obsidian-plugin && pnpm install --frozen-lockfile
+	@bun install --cwd obsidian-plugin
 
 APP_PORT ?= 8080
 CONSOLE_PORT ?= 9090
 
 dev:
-	@echo "Starting backend development server + asset watches..."
+	@echo "Starting Bun web server in watch mode + asset watch..."
 	@echo "App Port: $(APP_PORT), Console Port: $(CONSOLE_PORT)"
 	@echo "Use Ctrl+C to stop all processes"
 	@set -e; \
-	cd server; \
-	APP_PORT=$(APP_PORT) CONSOLE_PORT=$(CONSOLE_PORT) MDBRAIN_LOG_LEVEL=DEBUG clojure -M:dev & \
-	BACKEND_PID=$$!; \
-	npm run watch:console & \
-	CONSOLE_WATCH_PID=$$!; \
-	npm run watch:app & \
-	APP_WATCH_PID=$$!; \
-	trap 'kill $$BACKEND_PID $$CONSOLE_WATCH_PID $$APP_WATCH_PID || true' INT TERM; \
-	wait $$BACKEND_PID $$CONSOLE_WATCH_PID $$APP_WATCH_PID
+	APP_PORT=$(APP_PORT) CONSOLE_PORT=$(CONSOLE_PORT) bun run dev:web & \
+	WEB_PID=$$!; \
+	bun run --cwd server watch & \
+	ASSETS_PID=$$!; \
+	trap 'kill $$WEB_PID $$ASSETS_PID || true' INT TERM; \
+	wait $$WEB_PID $$ASSETS_PID
+
+web-dev:
+	@echo "Starting Bun web server in watch mode..."
+	@bun run dev:web
 
 backend-dev:
 	@echo "Starting backend development server..."
@@ -85,13 +89,13 @@ backend-repl:
 
 assets-dev:
 	@echo "Starting Tailwind CSS watch mode..."
-	@cd server && npm run watch
+	@bun run --cwd server watch
 
 plugin-dev:
 	@echo "Starting Obsidian plugin development mode..."
-	@cd obsidian-plugin && pnpm dev
+	@bun run --cwd obsidian-plugin dev
 
-build: backend-build assets-build plugin-build
+build: assets-build plugin-build web-build
 
 backend-build:
 	@echo "Building backend uberjar..."
@@ -100,22 +104,26 @@ backend-build:
 
 assets-build:
 	@echo "Building Tailwind CSS..."
-	@cd server && npm run build
+	@bun run --cwd server build
 	@echo "CSS built:"
 	@echo "  - server/resources/publics/console/css/console.css"
 	@echo "  - server/resources/publics/app/css/app.css"
 
 plugin-build:
 	@echo "Building Obsidian plugin..."
-	@cd obsidian-plugin && pnpm build
+	@bun run --cwd obsidian-plugin build
 	@echo "Plugin built: obsidian-plugin/dist/"
 
 plugin-package:
 	@echo "Packaging Obsidian plugin..."
-	@cd obsidian-plugin && pnpm package
+	@bun run --cwd obsidian-plugin package
 	@echo "Plugin packaged: obsidian-plugin/mdbrain-plugin.zip"
 
-test: backend-test plugin-test
+web-build:
+	@echo "Building Bun web app..."
+	@bun run build:web
+
+test: plugin-test web-test
 
 backend-test:
 	@echo "Running backend tests..."
@@ -123,7 +131,11 @@ backend-test:
 
 plugin-test:
 	@echo "Running plugin tests..."
-	@cd obsidian-plugin && pnpm test
+	@bun run --cwd obsidian-plugin test
+
+web-test:
+	@echo "Running Bun web tests..."
+	@bun run test:web
 
 # Database
 db-migrate:
@@ -149,6 +161,7 @@ clean:
 	@rm -rf server/target/
 	@rm -rf server/.cpcache/
 	@rm -rf obsidian-plugin/dist/
+	@rm -rf apps/web/dist/
 	@rm -f obsidian-plugin/main.js
 	@rm -f obsidian-plugin/main.js.map
 	@rm -f obsidian-plugin/*.zip

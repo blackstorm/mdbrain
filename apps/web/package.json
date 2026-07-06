@@ -1,0 +1,13 @@
+{
+  "name": "@mdbrain/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run src/index.tsx",
+    "build": "bun build --target bun src/index.tsx --outdir dist",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "marked": "^18.0.5"
+  }
+}

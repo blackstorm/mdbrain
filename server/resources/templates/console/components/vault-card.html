@@ -21,7 +21,7 @@
         class="action-menu-btn"
         onclick="toggleActionMenu(this)"
       >
-        {{ lucide_icon("more-vertical", "icon-md") }}
+        {{ lucide_icon("ellipsis-vertical", "icon-md") }}
       </button>
       <div class="action-menu">
         <button
@@ -78,13 +78,13 @@
     <div>
       {% if vault.publish-ok %}
         <div class="flex items-center gap-2 text-sm text-[var(--success)]">
-          {{ lucide_icon("check-circle", "icon-xs") }}
+          {{ lucide_icon("circle-check", "icon-xs") }}
           <span class="font-medium">OK</span>
         </div>
       {% else %}
         {% if vault.publish-error %}
           <div class="flex items-center gap-2 text-sm text-[var(--error)]">
-            {{ lucide_icon("alert-circle", "icon-xs") }}
+            {{ lucide_icon("circle-alert", "icon-xs") }}
             <span class="font-medium">Error</span>
           </div>
         {% else %}

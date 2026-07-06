@@ -8,7 +8,7 @@
 
 支持多 Vault 发布、自动增量发布、链接解析、反向链接展示等功能，旨在为数字花园、博客、文档和教程站点提供无缝发布体验。
 
-采用 `Clojure` 和 `HTMX` 构建，架构简洁、高效且易于维护。
+采用 `Bun`、`bun:sqlite`、`TSX` 与 `HTMX` 构建，架构简洁、高效且易于维护。
 
 ## 为什么选择 Mdbrain
 
@@ -91,6 +91,7 @@ Mdbrain 通过环境变量读取配置。
 **支持哪些存储后端？**
 
 本地文件系统存储，以及任何 S3 兼容的对象存储（AWS S3、MinIO、RustFS、Cloudflare R2 等）。
+如果使用你自己的 S3 服务，请先创建 Bucket。仓库内置的 RustFS compose 会自动完成 Bucket 初始化。
 
 **是否支持反向链接？**
 
@@ -106,14 +107,14 @@ Mdbrain 通过环境变量读取配置。
 
 ## 开发
 
-依赖：Java 25（Temurin）、Clojure CLI、Node.js 25、pnpm、Make。
+依赖：Bun 1.3+、Make。
 
 ```bash
 make install
 make dev
 ```
 
-- Frontend：`http://localhost:8080`
+- 公开站点：`http://localhost:8080`
 - Console：`http://localhost:9090/console`
 
 ## 发布产物

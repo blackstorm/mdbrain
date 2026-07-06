@@ -1,0 +1,5 @@
+{
+  "name": "@mdbrain/shared",
+  "private": true,
+  "type": "module"
+}

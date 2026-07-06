@@ -9,9 +9,7 @@ services:
     environment:
       - STORAGE_TYPE=s3
       - DATA_PATH=${DATA_PATH:-/app/data}
-      - MDBRAIN_LOG_LEVEL=${MDBRAIN_LOG_LEVEL:-INFO}
       - CADDY_ON_DEMAND_TLS_ENABLED=${CADDY_ON_DEMAND_TLS_ENABLED:-false}
-      - JAVA_OPTS=${JAVA_OPTS:-}
       - S3_ENDPOINT=http://rustfs:9000
       - S3_ACCESS_KEY=${S3_ACCESS_KEY:-rustfsadmin}
       - S3_SECRET_KEY=${S3_SECRET_KEY:-rustfsadmin}
@@ -21,6 +19,8 @@ services:
     depends_on:
       rustfs:
         condition: service_healthy
+      rustfs-init:
+        condition: service_completed_successfully
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "/app/healthcheck.sh"]
@@ -48,6 +48,19 @@ services:
       start_period: 5s
       retries: 3
     restart: unless-stopped
+
+  rustfs-init:
+    image: minio/mc:latest
+    depends_on:
+      rustfs:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        mc alias set local http://rustfs:9000 ${S3_ACCESS_KEY:-rustfsadmin} ${S3_SECRET_KEY:-rustfsadmin}
+        mc mb --ignore-existing local/${S3_BUCKET:-mdbrain}
+    restart: "no"
 
   caddy:
     image: caddy:2-alpine

@@ -8,7 +8,7 @@
 
 It supports multiple vaults, automatic incremental publishing, link parsing, and backlink display—designed to deliver a seamless publishing experience for digital gardens, blogs, documentation, and tutorial sites.
 
-Built with `Clojure` and `HTMX` for a simple, fast, and maintainable architecture.
+Built with `Bun`, `bun:sqlite`, `TSX`, and `HTMX` for a simple, fast, and maintainable architecture.
 
 ## Why Mdbrain
 
@@ -91,6 +91,7 @@ Full reference: [selfhosted/README.md](selfhosted/README.md#toc-environment-vari
 **What storage backends are supported?**
 
 Local filesystem storage and any S3-compatible object storage (AWS S3, MinIO, RustFS, Cloudflare R2, etc.).
+When using your own S3 service, create the bucket ahead of time. The bundled RustFS compose stack handles bucket creation for you.
 
 **Does it support backlinks?**
 
@@ -106,14 +107,14 @@ Yes. Each vault can have its own custom domain with automatic HTTPS via Caddy's 
 
 ## Development
 
-Prerequisites: Java 25 (Temurin), Clojure CLI, Node.js 25, pnpm, Make.
+Prerequisites: Bun 1.3+, Make.
 
 ```bash
 make install
 make dev
 ```
 
-- Frontend: `http://localhost:8080`
+- Public app: `http://localhost:8080`
 - Console: `http://localhost:9090/console`
 
 ## Releases
